@@ -194,151 +194,151 @@ RECTANGLE_S  res_group[RES_GROUP] =
 //	//fclose(fp);
 //}
 
-static void vi_capture_loop(VI_DEV dev_id, int number, const char* path,
-	VI_CHN_ATTR* attr, VI_CHN_ATTR* attr_sub)
-{
-	int count = 0;
-	struct video_input_frame frame;
-
-	ak_print_normal(MODULE_ID_VI, "capture start\n");
-
-	/*
-	 * To get frame by loop
-	 */
-	while (count < number) {
-		memset(&frame, 0x00, sizeof(frame));
-
-		/* to get frame according to the channel number */
-		int ret = ak_vi_get_frame(channel_num, &frame);
-
-		if (!ret) {
-			/*
-			 * Here, you can implement your code to use this frame.
-			 * Notice, do not occupy it too long.
-			 */
-			ak_print_normal_ex(MODULE_ID_VI, "[%d] main chn yuv len: %u\n", count,
-				frame.vi_frame.len);
-			ak_print_normal_ex(MODULE_ID_VI, "[%d] main chn phyaddr: %lu\n", count,
-				frame.phyaddr);
-			//display(frame.vi_frame.data, frame.vi_frame.len);//自己写的显示函数
-
-			//显示图像
-			int ret = 0;
-			memset(data, 0, len);
-			//ret = fread(data, 1, len, fp);      // read the file
-			ak_print_normal(MODULE_ID_VO, "read [%d] byte to dma buffer\n", ret);
-
-			/* obj add */
-			struct ak_vo_obj obj;
-
-			/* set obj src info*/
-			obj.format = data_format;
-			obj.cmd = GP_OPT_SCALE;
-			obj.vo_layer.width = 1920;
-			obj.vo_layer.height = 1080;
-			obj.vo_layer.clip_pos.top = 0;
-			obj.vo_layer.clip_pos.left = 0;
-			obj.vo_layer.clip_pos.width = 1920;
-			obj.vo_layer.clip_pos.height = 1080;
-
-			ak_mem_dma_vaddr2paddr(data, &(obj.vo_layer.dma_addr));
-
-			/* show as the screen partion set */
-			int counter = display_num;
-			if (display_num == 1)
-			{
-				/* set dst_layer 1 info*/
-				obj.dst_layer.top = 0;
-				obj.dst_layer.left = 0;
-				obj.dst_layer.width = dst_width;
-				obj.dst_layer.height = dst_height;
-				/* display obj 1*/
-				ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
-			}
-			else
-			{
-				/* more than one partion */
-				if (counter)
-				{
-					/* set dst_layer 1 info*/
-					obj.dst_layer.top = 0;
-					obj.dst_layer.left = 0;
-					obj.dst_layer.width = dst_width / dou;
-					obj.dst_layer.height = dst_height / dou;
-					/* display obj 1*/
-					ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
-					counter--;
-				}
-
-				if (counter != 0)
-				{
-					/* set dst_layer 2 info*/
-					obj.dst_layer.top = 0;
-					obj.dst_layer.left = dst_width / dou;
-					obj.dst_layer.width = dst_width / dou;
-					obj.dst_layer.height = dst_height / dou;//400;
-					/* display obj 1*/
-					ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
-					counter--;
-				}
-
-				if (counter)
-				{
-					/* set dst_layer 3 info*/
-					obj.dst_layer.top = dst_height / dou;//400;
-					obj.dst_layer.left = 0;
-					obj.dst_layer.width = dst_width / dou;
-					obj.dst_layer.height = dst_height / dou;//400;
-					/* display obj 1*/
-					ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
-					counter--;
-				}
-
-				if (counter)
-				{
-					/* set dst_layer 4 info*/
-					obj.dst_layer.top = dst_height / dou;//400;
-					obj.dst_layer.left = dst_width / dou;
-					obj.dst_layer.width = dst_width / dou;
-					obj.dst_layer.height = dst_height / dou;//400;
-					/* display obj 1*/
-					ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
-					counter--;
-				}
-
-			}
-
-			/* flush to screen */
-			int cmd = AK_VO_REFRESH_VIDEO_GROUP & 0x100;
-			cmd |= AK_VO_REFRESH_GUI_GROUP & 0x10000;
-			ak_vo_refresh_screen(cmd);
-
-
-			//if (channel_num == VIDEO_CHN0)
-			//	save_yuv_data(save_path, count, &frame, attr);
-			//else
-			//	save_yuv_data(save_path, count, &frame, attr_sub);
-
-			/*
-			 * in this context, this frame was useless,
-			 * release frame data
-			 */
-			ak_vi_release_frame(channel_num, &frame);
-			count++;
-		}
-		else {
-
-			/*
-			 *	If getting too fast, it will have no data,
-			 *	just take breath.
-			 */
-			ak_print_normal_ex(MODULE_ID_VI, "get frmae failed!\n");
-			ak_sleep_ms(10);
-		}
-	}
-
-	ak_print_normal(MODULE_ID_VI, "capture finish\n\n");
-}
+//static void vi_capture_loop(VI_DEV dev_id, int number, const char* path,
+//	VI_CHN_ATTR* attr, VI_CHN_ATTR* attr_sub)
+//{
+//	int count = 0;
+//	struct video_input_frame frame;
+//
+//	ak_print_normal(MODULE_ID_VI, "capture start\n");
+//
+//	/*
+//	 * To get frame by loop
+//	 */
+//	while (count < number) {
+//		memset(&frame, 0x00, sizeof(frame));
+//
+//		/* to get frame according to the channel number */
+//		int ret = ak_vi_get_frame(channel_num, &frame);
+//
+//		if (!ret) {
+//			/*
+//			 * Here, you can implement your code to use this frame.
+//			 * Notice, do not occupy it too long.
+//			 */
+//			ak_print_normal_ex(MODULE_ID_VI, "[%d] main chn yuv len: %u\n", count,
+//				frame.vi_frame.len);
+//			ak_print_normal_ex(MODULE_ID_VI, "[%d] main chn phyaddr: %lu\n", count,
+//				frame.phyaddr);
+//			//display(frame.vi_frame.data, frame.vi_frame.len);//自己写的显示函数
+//
+//			//显示图像
+//			int ret = 0;
+//			memset(data, 0, len);
+//			//ret = fread(data, 1, len, fp);      // read the file
+//			ak_print_normal(MODULE_ID_VO, "read [%d] byte to dma buffer\n", ret);
+//
+//			/* obj add */
+//			struct ak_vo_obj obj;
+//
+//			/* set obj src info*/
+//			obj.format = data_format;
+//			obj.cmd = GP_OPT_SCALE;
+//			obj.vo_layer.width = 1920;
+//			obj.vo_layer.height = 1080;
+//			obj.vo_layer.clip_pos.top = 0;
+//			obj.vo_layer.clip_pos.left = 0;
+//			obj.vo_layer.clip_pos.width = 1920;
+//			obj.vo_layer.clip_pos.height = 1080;
+//
+//			ak_mem_dma_vaddr2paddr(data, &(obj.vo_layer.dma_addr));
+//
+//			/* show as the screen partion set */
+//			int counter = display_num;
+//			if (display_num == 1)
+//			{
+//				/* set dst_layer 1 info*/
+//				obj.dst_layer.top = 0;
+//				obj.dst_layer.left = 0;
+//				obj.dst_layer.width = dst_width;
+//				obj.dst_layer.height = dst_height;
+//				/* display obj 1*/
+//				ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
+//			}
+//			else
+//			{
+//				/* more than one partion */
+//				if (counter)
+//				{
+//					/* set dst_layer 1 info*/
+//					obj.dst_layer.top = 0;
+//					obj.dst_layer.left = 0;
+//					obj.dst_layer.width = dst_width / dou;
+//					obj.dst_layer.height = dst_height / dou;
+//					/* display obj 1*/
+//					ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
+//					counter--;
+//				}
+//
+//				if (counter != 0)
+//				{
+//					/* set dst_layer 2 info*/
+//					obj.dst_layer.top = 0;
+//					obj.dst_layer.left = dst_width / dou;
+//					obj.dst_layer.width = dst_width / dou;
+//					obj.dst_layer.height = dst_height / dou;//400;
+//					/* display obj 1*/
+//					ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
+//					counter--;
+//				}
+//
+//				if (counter)
+//				{
+//					/* set dst_layer 3 info*/
+//					obj.dst_layer.top = dst_height / dou;//400;
+//					obj.dst_layer.left = 0;
+//					obj.dst_layer.width = dst_width / dou;
+//					obj.dst_layer.height = dst_height / dou;//400;
+//					/* display obj 1*/
+//					ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
+//					counter--;
+//				}
+//
+//				if (counter)
+//				{
+//					/* set dst_layer 4 info*/
+//					obj.dst_layer.top = dst_height / dou;//400;
+//					obj.dst_layer.left = dst_width / dou;
+//					obj.dst_layer.width = dst_width / dou;
+//					obj.dst_layer.height = dst_height / dou;//400;
+//					/* display obj 1*/
+//					ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
+//					counter--;
+//				}
+//
+//			}
+//
+//			/* flush to screen */
+//			int cmd = AK_VO_REFRESH_VIDEO_GROUP & 0x100;
+//			cmd |= AK_VO_REFRESH_GUI_GROUP & 0x10000;
+//			ak_vo_refresh_screen(cmd);
+//
+//
+//			//if (channel_num == VIDEO_CHN0)
+//			//	save_yuv_data(save_path, count, &frame, attr);
+//			//else
+//			//	save_yuv_data(save_path, count, &frame, attr_sub);
+//
+//			/*
+//			 * in this context, this frame was useless,
+//			 * release frame data
+//			 */
+//			ak_vi_release_frame(channel_num, &frame);
+//			count++;
+//		}
+//		else {
+//
+//			/*
+//			 *	If getting too fast, it will have no data,
+//			 *	just take breath.
+//			 */
+//			ak_print_normal_ex(MODULE_ID_VI, "get frmae failed!\n");
+//			ak_sleep_ms(10);
+//		}
+//	}
+//
+//	ak_print_normal(MODULE_ID_VI, "capture finish\n\n");
+//}
 
 /**
  * Preconditions:
