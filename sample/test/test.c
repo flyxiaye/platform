@@ -556,7 +556,7 @@ int main(int argc, char** argv)
 
 	/* store the file path */
 	char file_path[64] = "";
-	int ret = 0;
+	ret = 0;
 	/* get the res and rotation */
 	int dst_width = 0;
 	int dst_height = 0;
