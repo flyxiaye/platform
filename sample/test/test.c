@@ -123,7 +123,7 @@ int main(int argc, char** argv)
 	//手动设置vi变量
 	frame_num = 1000;
 	channel_num = 0;
-	isp_path = "isp_pr2000_dvp_pal_25fps_27M.conf";
+	isp_path = "/etc/isp_ar0230_dvp.conf";
 	save_path = "vi_yuv/";
 	main_res_id = 4;
 	sub_res_id = 0;
