@@ -121,7 +121,7 @@ int main(int argc, char** argv)
 
 	//"eg: %s -n 1000 -c 1 -f isp_pr2000_dvp_pal_25fps_27M.conf -p vi_yuv/ -m 4 -s 0\n";
 	//�ֶ�����vi����
-	frame_num = 1000;
+	frame_num = 10000;
 	channel_num = 0;
 	isp_path = "/etc/isp_ar0230_dvp.conf";
 	save_path = "/tmp/yuv/";
@@ -133,13 +133,13 @@ int main(int argc, char** argv)
 	screen_flag = 1;
 	data_file = "/tmp/yuv";
 	display_num = 1;
-	data_format = 4;
+	data_format = 5;
 	out_format = 1;
 	logo_file = "/mnt/anyka.logo.577.160.rgb";
 
 	//==================================vi init start==========================//
 		/*check param validate*/
-	if (frame_num < 0 || frame_num > 1000 || channel_num < 0 || channel_num > 2 || strlen(isp_path) == 0 || strlen(save_path) == 0)
+	if (frame_num < 0 || channel_num < 0 || channel_num > 2 || strlen(isp_path) == 0 || strlen(save_path) == 0)
 	{
 		ak_print_error_ex(MODULE_ID_VI, "INPUT param error!\n");
 		//help_hint(argv[0]);
@@ -577,7 +577,7 @@ int main(int argc, char** argv)
 
 			/* flush to screen */
 			int cmd = AK_VO_REFRESH_VIDEO_GROUP & 0x100;
-			cmd |= AK_VO_REFRESH_GUI_GROUP & 0x10000;
+			// cmd |= AK_VO_REFRESH_GUI_GROUP & 0x10000;
 			ak_vo_refresh_screen(cmd);
 
 
