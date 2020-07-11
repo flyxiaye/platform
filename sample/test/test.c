@@ -62,8 +62,8 @@ int sub_res_id = 0;
 #define LEN_OPTION_SHORT        512
 #define MAX_DIS_NUM             4
 
-static char* pc_prog_name = NULL;                                                      //demoÃû³Æ
-static int screen_flag = 0;                                                         //mipiÆÁÄ»
+static char* pc_prog_name = NULL;                                                      //demoï¿½ï¿½ï¿½ï¿½
+static int screen_flag = 0;                                                         //mipiï¿½ï¿½Ä»
 static char* data_file = "/mnt/yuv";
 static char* logo_file = "/mnt/anyka.logo.577.160.rgb";
 static int display_num = 4;
@@ -120,18 +120,18 @@ int main(int argc, char** argv)
 	}*/
 
 	//"eg: %s -n 1000 -c 1 -f isp_pr2000_dvp_pal_25fps_27M.conf -p vi_yuv/ -m 4 -s 0\n";
-	//ÊÖ¶¯ÉèÖÃvi±äÁ¿
+	//ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½viï¿½ï¿½ï¿½ï¿½
 	frame_num = 1000;
 	channel_num = 0;
 	isp_path = "/etc/isp_ar0230_dvp.conf";
-	save_path = "vi_yuv/";
+	save_path = "/tmp/yuv/";
 	main_res_id = 4;
 	sub_res_id = 0;
 
 	//"eg: %s -t 0 -f /mnt/yuv -n 1 -i 4 -o 1 -l /mnt/anyka.logo.577.160.rgb\n"
-	//ÊÖ¶¯ÉèÖÃvo±äÁ¿
+	//ï¿½Ö¶ï¿½ï¿½ï¿½ï¿½ï¿½voï¿½ï¿½ï¿½ï¿½
 	screen_flag = 1;
-	data_file = "/mnt/yuv";
+	data_file = "/tmp/yuv";
 	display_num = 1;
 	data_format = 4;
 	out_format = 1;
@@ -299,9 +299,9 @@ int main(int argc, char** argv)
 	ak_print_normal(MODULE_ID_VI, "*****************************************\n");
 
 	/* parse the option */
-	//if (parse_option(argc, argv) == AK_FALSE)            //½âÊÍºÍÅäÖÃÑ¡Ïî
+	//if (parse_option(argc, argv) == AK_FALSE)            //ï¿½ï¿½ï¿½Íºï¿½ï¿½ï¿½ï¿½ï¿½Ñ¡ï¿½ï¿½
 	//{
-	//	return AK_FAILED;                                           //´òÓ¡°ïÖúºóÍË³ö
+	//	return AK_FAILED;                                           //ï¿½ï¿½Ó¡ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë³ï¿½
 	//}
 
 	if (display_num < 0 || display_num > MAX_DIS_NUM)
@@ -437,13 +437,13 @@ int main(int argc, char** argv)
 
 	}
 
-	void* data = ak_mem_dma_alloc(MODULE_ID_VO, len);
-	if (data == NULL)
-	{
-		ak_print_error_ex(MODULE_ID_VO, "Can't malloc DMA memory!\n");
-		ret = AK_FAILED;
-		goto err;
-	}
+	// void* data = ak_mem_dma_alloc(MODULE_ID_VO, len);
+	// if (data == NULL)
+	// {
+	// 	ak_print_error_ex(MODULE_ID_VO, "Can't malloc DMA memory!\n");
+	// 	ret = AK_FAILED;
+	// 	goto err;
+	// }
 
 	/* 1-4 partion screen to show the picture */
 	int dou = 1;
@@ -486,13 +486,14 @@ int main(int argc, char** argv)
 				frame.vi_frame.len);
 			ak_print_normal_ex(MODULE_ID_VI, "[%d] main chn phyaddr: %lu\n", count,
 				frame.phyaddr);
-			//display(frame.vi_frame.data, frame.vi_frame.len);//×Ô¼ºÐ´µÄÏÔÊ¾º¯Êý
+			//display(frame.vi_frame.data, frame.vi_frame.len);//ï¿½Ô¼ï¿½Ð´ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½
 
-			//ÏÔÊ¾Í¼Ïñ
+			//è¾“å‡º
+			//ï¿½ï¿½Ê¾Í¼ï¿½ï¿½
 			int ret = 0;
-			memset(data, 0, len);
+			// memset(data, 0, len);
 			//ret = fread(data, 1, len, fp);      // read the file
-			ak_print_normal(MODULE_ID_VO, "read [%d] byte to dma buffer\n", ret);
+			// ak_print_normal(MODULE_ID_VO, "read [%d] byte to dma buffer\n", ret);
 
 			/* obj add */
 			struct ak_vo_obj obj;
@@ -507,7 +508,7 @@ int main(int argc, char** argv)
 			obj.vo_layer.clip_pos.width = 1920;
 			obj.vo_layer.clip_pos.height = 1080;
 
-			ak_mem_dma_vaddr2paddr(data, &(obj.vo_layer.dma_addr));
+			ak_mem_dma_vaddr2paddr(frame.vi_frame.data, &(obj.vo_layer.dma_addr));
 
 			/* show as the screen partion set */
 			int counter = display_num;
@@ -607,8 +608,8 @@ int main(int argc, char** argv)
 
 
 err:
-	if (data)
-		ak_mem_dma_free(data);
+	// if (data)
+	// 	ak_mem_dma_free(data);
 
 	ak_vo_destroy_layer(AK_VO_LAYER_VIDEO_1);
 	ak_vo_destroy_layer(AK_VO_LAYER_GUI_1);
