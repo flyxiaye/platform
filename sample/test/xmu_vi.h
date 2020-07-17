@@ -1,5 +1,7 @@
 #ifndef XMU_VI_H
 #define XMU_VI_H
+#include "ak_common.h"
+#include "ak_vi.h"
 
 void vi_set_param(void);
 int vi_init(void);

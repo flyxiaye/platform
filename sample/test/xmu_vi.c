@@ -61,7 +61,7 @@ int vi_init(void)
 	{
 		ak_print_error_ex(MODULE_ID_VI, "INPUT param error!\n");
 		//help_hint(argv[0]);
-		return FAILEDED;
+		return FAILED;
 	}
 
 	int ret = -1;								//return value
