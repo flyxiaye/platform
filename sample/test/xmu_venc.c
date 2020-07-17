@@ -37,13 +37,7 @@
 
 #define MAX_ENC_NUM   4
 
-struct venc_pair
-{
-    int venc_handle;
-    char *file;      //rtsp client handle
-    char save_file[128];
-    int en_type;
-}enc_pair;
+
 
 /* resolation define */
 struct resolution_t {
@@ -55,10 +49,9 @@ struct resolution_t {
 static char *pc_prog_name = NULL;                      //demo名称
 static char *file  = NULL;                             //file name
 static char *type         = NULL;                      //get the type input
-static char *save_path    = "/mnt/video_encode";
+// static char *save_path    = "/mnt/video_encode";
 static int main_res       = 4;
 static int sub_res        = 1;
-static int frame_num   = 1000;
 static char *cfg = "/etc/jffs2/isp_pr2000_dvp.conf";
 ak_mutex_t refresh_flag_lock;
 static int chn_index = 0;
@@ -73,97 +66,52 @@ static struct resolution_t resolutions[DE_VIDEO_SIZE_MAX] = {
     {2560,  1920,  "DE_VIDEO_SIZE_1920P"}
 };
 
+
+//=============自己定义的变量============//
+static ak_sem_t enc_sem;  //编码线程信号量
+static struct venc_pair
+{
+    int venc_handle;
+    struct video_input_frame *frame;
+    struct video_stream *stream;
+    int en_type;
+}enc_pair;      //线程传递参数
+//=============自己定义的变量end============//
+
 void *video_encode_from_vi_th(void *arg)
 {
-    // ak_thread_set_name("venc_th");
-    // struct venc_pair *venc_th = (struct venc_pair *)arg; //venc handle
+    ak_thread_set_name("venc_th");
+    struct venc_pair *venc_th = (struct venc_pair *)arg; //venc handle
+    struct video_input_frame *frame = enc_pair.frame;
+    enc_pair.stream = ak_mem_alloc(MODULE_ID_VENC, sizeof(struct video_stream));
+    struct video_stream stream = enc_pair.stream;
+    ak_print_normal(MODULE_ID_VI, "capture start\n");
 
-    // /* a dir opt */
-    // int count = 0;
-    // FILE *save_fp = NULL;
-    // struct video_input_frame frame;
-
-    // ak_print_normal(MODULE_ID_VI, "capture start\n");
-
-    // /* init the save file name and open it */
-    // memset(venc_th->save_file, 0x00, sizeof(venc_th->save_file));
-    // if (H264_ENC_TYPE == venc_th->en_type)
-    //     sprintf(venc_th->save_file, "%s/h264_chn%d_%d.str", save_path, chn_index, venc_th->venc_handle);
-    // else
-    //     sprintf(venc_th->save_file, "%s/h265_chn%d_%d.str", save_path, chn_index, venc_th->venc_handle);
-
-    // /* save file open */
-    // if (MJPEG_ENC_TYPE != venc_th->en_type)
-    //     save_fp = fopen(venc_th->save_file, "w+");
-
-    // /* frame num cal */
-    // while(count < frame_num)
-    // {
-    //     memset(&frame, 0x00, sizeof(frame));
-
-    //     /* if save as jpeg data */
-    //     if (MJPEG_ENC_TYPE == venc_th->en_type)
-    //     {
-    //         memset(venc_th->save_file, 0x00, sizeof(venc_th->save_file));
-    //         sprintf(venc_th->save_file, "%s/chn%d_%d_num_%d.jpeg", save_path, chn_index, venc_th->venc_handle, count);
-    //         save_fp = fopen(venc_th->save_file, "w+");
-    //     }
-
-    //     /* to get frame */
-    //     VI_CHN chn_id = (chn_index == 0) ?  VIDEO_CHN0 : VIDEO_CHN1;
-    //     int ret = ak_vi_get_frame(chn_id, &frame);
-    //     if (!ret) 
-    //     {
-    //         /* send it to encode */
-    //         struct video_stream *stream = ak_mem_alloc(MODULE_ID_VENC, sizeof(struct video_stream));
-    //         ret = ak_venc_encode_frame(venc_th->venc_handle, frame.vi_frame.data, frame.vi_frame.len, frame.mdinfo, stream);
-    //         if (ret)
-    //         {
-    //             /* send to encode failed */
-    //             ak_print_error_ex(MODULE_ID_VENC, "send to encode failed\n");
-    //         }
-    //         else
-    //         {
-    //             fwrite(stream->data, stream->len, 1, save_fp);
-    //             ak_venc_release_stream(venc_th->venc_handle, stream);
-    //             count++;
-    //         }
-
-    //         ak_mem_free(stream);
-    //         ak_vi_release_frame(chn_id, &frame);
-    //     }
-    //     else
-    //     {
-    //         /* 
-    //          *	If getting too fast, it will have no data,
-    //          *	just take breath.
-    //          */
-    //         ak_print_normal_ex(MODULE_ID_VI, "get frame failed!\n");
-    //         ak_sleep_ms(10);
-    //     }
-
-    //     /* save as a jpeg picture */
-    //     if (MJPEG_ENC_TYPE == venc_th->en_type)
-    //     {
-    //         if (NULL != save_fp)
-    //         {
-    //             fclose(save_fp);
-    //             save_fp = NULL;
-    //         }
-    //     }
-    // }
-
-    // /* finished */
-    // if (MJPEG_ENC_TYPE != venc_th->en_type)
-    //     fclose(save_fp);
-
-    // return NULL;
+    while(1)
+    {
+        ak_thread_sem_wait(&enc_sem);  //线程等待信号量
+        int ret = ak_venc_encode_frame(venc_th->venc_handle, frame.vi_frame.data, frame.vi_frame.len, frame.mdinfo, stream);
+        if (ret)
+        {
+            /* send to encode failed */
+            ak_print_error_ex(MODULE_ID_VENC, "send to encode failed\n");
+        }
+        else        //编码处理成功，TODO：
+        {
+            //将stream data 通过udp协议传送给另一台机器
+            // fwrite(stream->data, stream->len, 1, save_fp);
+            // ak_thread_sem_wait(&enc_sem); //等待UDP发送完毕
+            ak_print_normal(MODULE_ID_VENC, "venc successed! stream size is %d\n", stream.len);
+            ak_venc_release_stream(venc_th->venc_handle, stream);
+        }
+    }
+    ak_mem_free(stream);
+    return NULL;
 }
 
 
 void venc_set_param(void)
 {
-    frame_num = 1000;   //"从vi获取的帧的数量"
     type = "h264";  //"编码输出数据格式 h264 h265 jpeg "
     main_res = 4;   //"主通道分辨率，0-5"
     sub_res = 1;    //"次通道分辨率，0-3 need smaller than main channel"
@@ -286,6 +234,13 @@ int venc_init(void)
     enc_pair.venc_handle = handle_id;
     enc_pair.en_type     = encoder_type;
 
+    //信号量初始化
+    ret = ak_thread_sem_init(&enc_sem, 0);
+    if (ret)
+    {
+        ak_print_error_ex(MODULE_ID_VENC, "thread sem init failed");
+        return FAILED;
+    }
     return SUCCESS;
 }
 
@@ -305,4 +260,16 @@ void venc_close(void)
         /* close the venc*/
         ak_venc_close(enc_pair.venc_handle);
     }
+}
+
+//信号量加一，即启动线程开始处理
+void venc_thread_sem_post(void)
+{
+    ak_thread_sem_post(&sem);
+}
+
+
+void enc_pair_set_source(struct video_input_frame *frame)
+{
+    enc_pair.frame = frame;
 }

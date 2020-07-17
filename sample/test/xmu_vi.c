@@ -217,3 +217,11 @@ void vi_release_one_frame(struct video_input_frame *frame)
 {
 	ak_vi_release_frame(channel_num, frame);
 }
+
+void vi_close(void)
+{
+	ak_vi_disable_chn(VIDEO_CHN0);
+	ak_vi_disable_chn(VIDEO_CHN1);
+	ak_vi_disable_dev(VIDEO_DEV0);
+	ak_vi_close(VIDEO_DEV0);
+}

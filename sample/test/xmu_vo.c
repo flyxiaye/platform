@@ -279,3 +279,12 @@ void vo_put_one_frame(void *data)
     // cmd |= AK_VO_REFRESH_GUI_GROUP & 0x10000;
     ak_vo_refresh_screen(cmd);
 }
+
+void vo_close(void)
+{
+	ak_vo_destroy_layer(AK_VO_LAYER_VIDEO_1);
+    ak_vo_destroy_layer(AK_VO_LAYER_GUI_1);
+
+    /* close the vo */
+    ak_vo_close(DEV_NUM);
+}
