@@ -2,7 +2,7 @@
 
 PROJ = test
 
-LIB_DEP = plat_vi plat_vo plat_common plat_log plat_mem plat_thread pthread plat_tde m plat_osal plat_drv plat_vpss plat_isp_sdk
+LIB_DEP = plat_vi plat_vo plat_common plat_log plat_mem plat_thread pthread plat_tde m plat_osal plat_drv plat_vpss plat_isp_sdk mpi_venc akv_encode
 
 LIBS = $(addprefix -l,$(LIB_DEP))
 
