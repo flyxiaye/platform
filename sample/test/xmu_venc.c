@@ -84,13 +84,13 @@ void *video_encode_from_vi_th(void *arg)
     struct venc_pair *venc_th = (struct venc_pair *)arg; //venc handle
     struct video_input_frame *frame = enc_pair.frame;
     enc_pair.stream = ak_mem_alloc(MODULE_ID_VENC, sizeof(struct video_stream));
-    struct video_stream stream = enc_pair.stream;
+    struct video_stream *stream = enc_pair.stream;
     ak_print_normal(MODULE_ID_VI, "capture start\n");
 
     while(1)
     {
         ak_thread_sem_wait(&enc_sem);  //线程等待信号量
-        int ret = ak_venc_encode_frame(venc_th->venc_handle, frame.vi_frame.data, frame.vi_frame.len, frame.mdinfo, stream);
+        int ret = ak_venc_encode_frame(venc_th->venc_handle, frame->vi_frame.data, frame->vi_frame.len, frame->mdinfo, stream);
         if (ret)
         {
             /* send to encode failed */
@@ -101,7 +101,7 @@ void *video_encode_from_vi_th(void *arg)
             //将stream data 通过udp协议传送给另一台机器
             // fwrite(stream->data, stream->len, 1, save_fp);
             // ak_thread_sem_wait(&enc_sem); //等待UDP发送完毕
-            ak_print_normal(MODULE_ID_VENC, "venc successed! stream size is %d\n", stream.len);
+            ak_print_normal(MODULE_ID_VENC, "venc successed! stream size is %d\n", stream->len);
             ak_venc_release_stream(venc_th->venc_handle, stream);
         }
     }
@@ -230,7 +230,6 @@ int venc_init(void)
     }
 
     /* recode the file */
-    enc_pair.file = file;
     enc_pair.venc_handle = handle_id;
     enc_pair.en_type     = encoder_type;
 
@@ -265,7 +264,7 @@ void venc_close(void)
 //信号量加一，即启动线程开始处理
 void venc_thread_sem_post(void)
 {
-    ak_thread_sem_post(&sem);
+    ak_thread_sem_post(&enc_sem);
 }
 
 
