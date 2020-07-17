@@ -57,7 +57,7 @@ ak_mutex_t refresh_flag_lock;
 static int chn_index = 0;
 static ak_pthread_t venc_stream_th;
 /* decoder resolution */
-static struct resolution_t resolutions[DE_VIDEO_SIZE_MAX] = {
+struct resolution_t resolutions[DE_VIDEO_SIZE_MAX] = {
     {640,   360,   "DE_VIDEO_SIZE_360P"},
     {640,   480,   "DE_VIDEO_SIZE_VGA"},
     {1280,  720,   "DE_VIDEO_SIZE_720P"},
