@@ -75,89 +75,89 @@ static struct resolution_t resolutions[DE_VIDEO_SIZE_MAX] = {
 
 void *video_encode_from_vi_th(void *arg)
 {
-    ak_thread_set_name("venc_th");
-    struct venc_pair *venc_th = (struct venc_pair *)arg; //venc handle
+    // ak_thread_set_name("venc_th");
+    // struct venc_pair *venc_th = (struct venc_pair *)arg; //venc handle
 
-    /* a dir opt */
-    int count = 0;
-    FILE *save_fp = NULL;
-    struct video_input_frame frame;
+    // /* a dir opt */
+    // int count = 0;
+    // FILE *save_fp = NULL;
+    // struct video_input_frame frame;
 
-    ak_print_normal(MODULE_ID_VI, "capture start\n");
+    // ak_print_normal(MODULE_ID_VI, "capture start\n");
 
-    /* init the save file name and open it */
-    memset(venc_th->save_file, 0x00, sizeof(venc_th->save_file));
-    if (H264_ENC_TYPE == venc_th->en_type)
-        sprintf(venc_th->save_file, "%s/h264_chn%d_%d.str", save_path, chn_index, venc_th->venc_handle);
-    else
-        sprintf(venc_th->save_file, "%s/h265_chn%d_%d.str", save_path, chn_index, venc_th->venc_handle);
+    // /* init the save file name and open it */
+    // memset(venc_th->save_file, 0x00, sizeof(venc_th->save_file));
+    // if (H264_ENC_TYPE == venc_th->en_type)
+    //     sprintf(venc_th->save_file, "%s/h264_chn%d_%d.str", save_path, chn_index, venc_th->venc_handle);
+    // else
+    //     sprintf(venc_th->save_file, "%s/h265_chn%d_%d.str", save_path, chn_index, venc_th->venc_handle);
 
-    /* save file open */
-    if (MJPEG_ENC_TYPE != venc_th->en_type)
-        save_fp = fopen(venc_th->save_file, "w+");
+    // /* save file open */
+    // if (MJPEG_ENC_TYPE != venc_th->en_type)
+    //     save_fp = fopen(venc_th->save_file, "w+");
 
-    /* frame num cal */
-    while(count < frame_num)
-    {
-        memset(&frame, 0x00, sizeof(frame));
+    // /* frame num cal */
+    // while(count < frame_num)
+    // {
+    //     memset(&frame, 0x00, sizeof(frame));
 
-        /* if save as jpeg data */
-        if (MJPEG_ENC_TYPE == venc_th->en_type)
-        {
-            memset(venc_th->save_file, 0x00, sizeof(venc_th->save_file));
-            sprintf(venc_th->save_file, "%s/chn%d_%d_num_%d.jpeg", save_path, chn_index, venc_th->venc_handle, count);
-            save_fp = fopen(venc_th->save_file, "w+");
-        }
+    //     /* if save as jpeg data */
+    //     if (MJPEG_ENC_TYPE == venc_th->en_type)
+    //     {
+    //         memset(venc_th->save_file, 0x00, sizeof(venc_th->save_file));
+    //         sprintf(venc_th->save_file, "%s/chn%d_%d_num_%d.jpeg", save_path, chn_index, venc_th->venc_handle, count);
+    //         save_fp = fopen(venc_th->save_file, "w+");
+    //     }
 
-        /* to get frame */
-        VI_CHN chn_id = (chn_index == 0) ?  VIDEO_CHN0 : VIDEO_CHN1;
-        int ret = ak_vi_get_frame(chn_id, &frame);
-        if (!ret) 
-        {
-            /* send it to encode */
-            struct video_stream *stream = ak_mem_alloc(MODULE_ID_VENC, sizeof(struct video_stream));
-            ret = ak_venc_encode_frame(venc_th->venc_handle, frame.vi_frame.data, frame.vi_frame.len, frame.mdinfo, stream);
-            if (ret)
-            {
-                /* send to encode failed */
-                ak_print_error_ex(MODULE_ID_VENC, "send to encode failed\n");
-            }
-            else
-            {
-                fwrite(stream->data, stream->len, 1, save_fp);
-                ak_venc_release_stream(venc_th->venc_handle, stream);
-                count++;
-            }
+    //     /* to get frame */
+    //     VI_CHN chn_id = (chn_index == 0) ?  VIDEO_CHN0 : VIDEO_CHN1;
+    //     int ret = ak_vi_get_frame(chn_id, &frame);
+    //     if (!ret) 
+    //     {
+    //         /* send it to encode */
+    //         struct video_stream *stream = ak_mem_alloc(MODULE_ID_VENC, sizeof(struct video_stream));
+    //         ret = ak_venc_encode_frame(venc_th->venc_handle, frame.vi_frame.data, frame.vi_frame.len, frame.mdinfo, stream);
+    //         if (ret)
+    //         {
+    //             /* send to encode failed */
+    //             ak_print_error_ex(MODULE_ID_VENC, "send to encode failed\n");
+    //         }
+    //         else
+    //         {
+    //             fwrite(stream->data, stream->len, 1, save_fp);
+    //             ak_venc_release_stream(venc_th->venc_handle, stream);
+    //             count++;
+    //         }
 
-            ak_mem_free(stream);
-            ak_vi_release_frame(chn_id, &frame);
-        }
-        else
-        {
-            /* 
-             *	If getting too fast, it will have no data,
-             *	just take breath.
-             */
-            ak_print_normal_ex(MODULE_ID_VI, "get frame failed!\n");
-            ak_sleep_ms(10);
-        }
+    //         ak_mem_free(stream);
+    //         ak_vi_release_frame(chn_id, &frame);
+    //     }
+    //     else
+    //     {
+    //         /* 
+    //          *	If getting too fast, it will have no data,
+    //          *	just take breath.
+    //          */
+    //         ak_print_normal_ex(MODULE_ID_VI, "get frame failed!\n");
+    //         ak_sleep_ms(10);
+    //     }
 
-        /* save as a jpeg picture */
-        if (MJPEG_ENC_TYPE == venc_th->en_type)
-        {
-            if (NULL != save_fp)
-            {
-                fclose(save_fp);
-                save_fp = NULL;
-            }
-        }
-    }
+    //     /* save as a jpeg picture */
+    //     if (MJPEG_ENC_TYPE == venc_th->en_type)
+    //     {
+    //         if (NULL != save_fp)
+    //         {
+    //             fclose(save_fp);
+    //             save_fp = NULL;
+    //         }
+    //     }
+    // }
 
-    /* finished */
-    if (MJPEG_ENC_TYPE != venc_th->en_type)
-        fclose(save_fp);
+    // /* finished */
+    // if (MJPEG_ENC_TYPE != venc_th->en_type)
+    //     fclose(save_fp);
 
-    return NULL;
+    // return NULL;
 }
 
 
