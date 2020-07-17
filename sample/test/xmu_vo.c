@@ -20,6 +20,13 @@
 
 //============自定义变量和宏定义===========//
 #include "xmu_common.h"
+struct output_param {
+    int dst_height;
+    int dst_width;
+    int dou;
+    int len;
+    int rotate;
+} vo_param;
 //============自定义变量和宏定义end===========//
 
 #define MIPI_SC_WIDTH 1280
@@ -39,408 +46,9 @@ static int display_num = 4;
 static AK_GP_FORMAT data_format = GP_FORMAT_YUV420P;
 static AK_GP_FORMAT out_format  = GP_FORMAT_RGB888;
 
-static char ac_option_hint[  ][ LEN_HINT ] = {                                         //操作提示数组
-    "打印帮助信息" ,
-    "显示屏幕类型 0 - MIPI, 1 - RGB" ,
-    "yuv图像文件路径目录" ,
-    "分屏数目 [1, 4]" ,
-    "[NUM] 数据输入格式 0:RGB565 1:RGB888 2:BGR565 3:BGR888 4:YUV420P 5:YUV420SP 6:ARGB8888 7:RGBA8888 8:ABGR8888 9:BGRA8888 10:TILED32X4" ,
-    "[NUM] 数据输出格式 0:RGB565 1:RGB888 2:BGR565 3:BGR888 ",
-    "logo 文件的路径，只支持提供的anyka.logo.577.160.rgb文件显示",
-    " ",
-};
 
-
-static struct option option_long[ ] = {
-    { "help"              , no_argument       , NULL , 'h' } ,      //"打印帮助信息" ,
-    { "screen-type"       , required_argument , NULL , 't' } ,      //"显示屏幕类型" ,
-    { "file-dir"          , required_argument , NULL , 'f' } ,      //"文件路径" ,
-    { "display-num"       , required_argument , NULL , 'n' } ,      //"分屏数目1-4" ,
-    { "format-in"         , required_argument , NULL , 'i' } ,      //"[NUM] 数据输入格式 0:RGB565 1:RGB888 2:BGR565 3:BGR888 4:YUV420P 5:YUV420SP 6:ARGB8888 7:RGBA8888 8:ABGR8888 9:BGRA8888 10:TILED32X4" ,
-    { "format-out"        , required_argument , NULL , 'o' } ,      //"[NUM] 数据输出格式 0:RGB565 1:RGB888 2:BGR565 3:BGR888 ,
-    { "logo-file"         , required_argument , NULL , 'l' } ,      //"logo 文件的路径，只支持提供的anyka.logo.rgb文件显示"
-    { 0                   , 0                 , 0    , 0   } ,
- };
-
-/* add the  obj to GUI layer */
-static int add_logo_to_gui(void)
+void vo_set_param(void)
 {
-    /* get the logo file */
-    FILE *fp_logo = fopen(logo_file, "rb");
-    if (NULL == fp_logo)
-    {
-        ak_print_error_ex(MODULE_ID_VO, "logo file open failed !!! This file is %s, check it!\n", logo_file);
-        return AK_FAILED;
-    }
-    /* get the file size */
-    fseek(fp_logo, 0, SEEK_END);
-    int file_size = ftell(fp_logo);
-    fseek(fp_logo, 0, SEEK_SET);
-
-    /* read data from teh file */
-    void *logo_data = ak_mem_dma_alloc(MODULE_ID_VO, file_size);
-    if(logo_data == NULL)
-    {
-        ak_print_error_ex(MODULE_ID_VO, "Can't malloc DMA memory!\n");
-        return AK_FAILED;
-    }
-    fread(logo_data, 1, file_size, fp_logo);
-
-    struct ak_vo_obj gui_obj;
-
-    /* set obj src info*/	
-    gui_obj.format = GP_FORMAT_RGB888;
-    gui_obj.cmd = GP_OPT_BLIT;
-    gui_obj.vo_layer.width = 577;
-    gui_obj.vo_layer.height = 160;
-    gui_obj.vo_layer.clip_pos.top = 0;
-    gui_obj.vo_layer.clip_pos.left = 0;
-    gui_obj.vo_layer.clip_pos.width = 577;
-    gui_obj.vo_layer.clip_pos.height = 160;
-
-    ak_mem_dma_vaddr2paddr(logo_data, &(gui_obj.vo_layer.dma_addr));
-
-    /* set dst_layer 1 info*/
-    gui_obj.dst_layer.top = 0;
-    gui_obj.dst_layer.left = 0;
-    gui_obj.dst_layer.width = 577;
-    gui_obj.dst_layer.height = 160;
-
-    /* display obj 1*/
-    ak_vo_add_obj(&gui_obj, AK_VO_LAYER_GUI_1);
-
-    /* free source */
-    ak_mem_dma_free(logo_data);
-    //posix_fadvise(fileno(fp_logo), 0, file_size, POSIX_FADV_DONTNEED);
-    fclose(fp_logo);
-
-    return AK_SUCCESS;
-}
-
-#ifdef AK_RTOS
-static int ak_vo_sample(int argc, char **argv)
-#else
-int main(int argc, char **argv)
-#endif
-{
-    /* start the application */
-    sdk_run_config config;
-    config.mem_trace_flag = SDK_RUN_DEBUG;
-    ak_sdk_init( &config );
-
-    //print the version
-    ak_print_normal(MODULE_ID_VI, "*****************************************\n");
-    ak_print_normal(MODULE_ID_VI, "** vo version: %s **\n", ak_vo_get_version());
-    ak_print_normal(MODULE_ID_VI, "*****************************************\n");
-
-    /* parse the option */
-    if( parse_option( argc, argv ) == AK_FALSE )            //解释和配置选项
-    {
-        return AK_FAILED;                                           //打印帮助后退出
-    }
-
-    if (display_num < 0 || display_num > MAX_DIS_NUM)
-    {
-        ak_print_error_ex(MODULE_ID_VO, "display num is only support 0 to %d\n", MAX_DIS_NUM);
-        return AK_FAILED;
-    }
-
-     /* store the file path */
-    char file_path[64]="";
-    int ret = 0;
-    /* get the res and rotation */
-    int dst_width = 0;
-    int dst_height = 0;
-    int rotate = 0;
-
-    /* get the screen res */
-    if (screen_flag == 1)
-    {
-        /* 1 means for RGB */
-        dst_width = RGB_SC_WIDTH;
-        dst_height = RGB_SC_HEIGHT;
-        rotate    = AK_GP_ROTATE_NONE;
-    }
-    else if (screen_flag == 0)
-    {
-        /* 0 means for MIPI */
-        dst_width = MIPI_SC_WIDTH;
-        dst_height = MIPI_SC_HEIGHT;
-        rotate = AK_GP_ROTATE_90;
-    }
-    else
-    {
-        ak_print_error_ex(MODULE_ID_VO, "screen type is invalid\n");
-        return AK_FAILED;
-    }
-
-    /* fill the struct to open the vo */
-    struct ak_vo_param	param;
-
-    /* fill the struct ready to open */
-    param.width = dst_width;//1280;
-    param.height = dst_height;// 800;
-    param.format = out_format;  //format to output
-    param.rotate = rotate;    //rotate value
-
-    /* open vo */
-    ret = ak_vo_open(&param, DEV_NUM);      //open vo
-
-    if(ret != 0)
-    {
-        /* open failed return -1 */
-        ak_print_error_ex(MODULE_ID_VO, "ak_vo_open failed![%d]\n",ret);
-        return AK_FAILED;	
-    }
-
-    /* create the video layer */
-    struct ak_vo_layer_in video_layer;
-    video_layer.create_layer.height = dst_height;   //800; //get the res
-    video_layer.create_layer.width  = dst_width;    //1280; //get the res
-    /* just from (0,0) */
-    video_layer.create_layer.left  = 0;         //layer left pos
-    video_layer.create_layer.top   = 0;         // layer top pos
-    video_layer.layer_opt          = 0;
-    video_layer.format             = out_format;
-
-    ret = ak_vo_create_video_layer(&video_layer, AK_VO_LAYER_VIDEO_1);
-    if(ret != 0)
-    {
-        /* if failed, close the vo */
-        ak_print_error_ex(MODULE_ID_VO, "ak_vo_create_video_layer failed![%d]\n",ret);
-        ak_vo_close(DEV_NUM);       // if failed, close the vo
-        return AK_FAILED;	
-    }
-
-    /* create the gui layer */
-    struct ak_vo_layer_in gui_layer;
-    /* only support the given log file */
-    gui_layer.create_layer.height = 160;    /* logo res */
-    gui_layer.create_layer.width  = 577;    /* logo res */
-    gui_layer.create_layer.left  = 0;       /* logo pos */
-    gui_layer.create_layer.top   = 0;       /* logo pos */
-    gui_layer.format             = out_format;  /* gui layer format */
-
-    gui_layer.layer_opt          = GP_OPT_COLORKEY; /* support the colorkey opt */
-
-    gui_layer.colorkey.coloract = COLOR_DELETE;       /* delete the color */
-    gui_layer.colorkey.color_min = 0xFFFF00;        /* min value */
-    gui_layer.colorkey.color_max = 0xFFFFFF;        /* max value */
-
-    struct ak_vo_layer_out gui_info;                /* output the gui layer info */
-    ret = ak_vo_create_gui_layer(&gui_layer, AK_VO_LAYER_GUI_1, &gui_info);
-    if(ret != 0)
-    {
-        ak_print_error_ex(MODULE_ID_VO, "ak_vo_create_gui_layer failed![%d]\n",ret);
-        ak_vo_destroy_layer(AK_VO_LAYER_VIDEO_1);
-        ak_vo_close(DEV_NUM);
-        return AK_FAILED;	
-    }
-
-    /* use the double buff mode */
-    ak_vo_set_fbuffer_mode(AK_VO_BUFF_DOUBLE);
-
-    /* support the yuv 420p */
-	int len = (1920*1080*3)/2;
-
-    /* get the size of the pixel */
-    switch (data_format)
-    {
-    /* 565 */
-    case GP_FORMAT_RGB565:
-    case GP_FORMAT_BGR565:
-        len = 1920*1080*2;
-        break;
-    /* 888 */
-    case GP_FORMAT_BGR888:
-    case GP_FORMAT_RGB888:
-        len = 1920*1080*3;
-        break;
-    /* 8888 */
-    case GP_FORMAT_ABGR8888:
-    case GP_FORMAT_ARGB8888:
-    case GP_FORMAT_RGBA8888:
-    case GP_FORMAT_BGRA8888:
-        len = 1920*1080*4;
-        break;
-    /* YUV */
-    case GP_FORMAT_YUV420P:
-    case GP_FORMAT_YUV420SP:
-        break;
-    default:
-        ak_print_error_ex(MODULE_ID_VO, "here not support the tileyuv data\n");
-        
-    }
-
-    void *data = ak_mem_dma_alloc(MODULE_ID_VO, len);
-    if(data == NULL)
-    {
-        ak_print_error_ex(MODULE_ID_VO, "Can't malloc DMA memory!\n");
-        ret = AK_FAILED;
-        goto err;
-    }
-
-    /* 1-4 partion screen to show the picture */
-    int dou = 1;
-    if (display_num == 1)
-        dou = 1;
-    else
-        dou = 2;
-
-    /* add logo to gui layer */
-    ret = add_logo_to_gui();
-    if(ret != 0)
-    {
-        ak_print_error_ex(MODULE_ID_VO, "add_logo_to_gui failed![%d]\n",ret);
-        goto err;	
-    }
-
-    /* scan the all file on the dir */
-    DIR *dir = NULL;
-    struct dirent *entry = NULL;
-
-    dir = opendir(data_file);//
-    if (dir == NULL)
-    {
-        ak_print_error_ex(MODULE_ID_VO, "can't open file dir[%s]\n", data_file);
-        ret = AK_FAILED;
-        goto err;      
-    }
-
-    /* each file should put on the screen */
-    while ((entry = readdir(dir)))
-    {
-        if (entry->d_type == 8)
-        {
-            memset(file_path, 0, sizeof(file_path));
-            sprintf(file_path, "%s/%s",  data_file, entry->d_name);  
-
-            FILE *fp = fopen(file_path, "rb");
-            if(fp!= NULL)
-            {
-                int ret = 0;
-                memset(data, 0, len);
-                ret = fread(data, 1, len, fp);      // read the file
-                ak_print_normal(MODULE_ID_VO, "read [%d] byte to dma buffer\n",ret);
-
-                /* obj add */
-                struct ak_vo_obj obj;
-
-                /* set obj src info*/	
-                obj.format = data_format;
-                obj.cmd = GP_OPT_SCALE;
-                obj.vo_layer.width = 1920;
-                obj.vo_layer.height = 1080;
-                obj.vo_layer.clip_pos.top = 0;
-                obj.vo_layer.clip_pos.left = 0;
-                obj.vo_layer.clip_pos.width = 1920;
-                obj.vo_layer.clip_pos.height = 1080;
-
-                ak_mem_dma_vaddr2paddr(data, &(obj.vo_layer.dma_addr));
-
-                /* show as the screen partion set */
-                int counter = display_num;
-                if (display_num == 1)
-                {
-                    /* set dst_layer 1 info*/
-                    obj.dst_layer.top = 0;
-                    obj.dst_layer.left = 0;
-                    obj.dst_layer.width = dst_width;
-                    obj.dst_layer.height = dst_height;
-                    /* display obj 1*/
-                    ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
-                }
-                else
-                {
-                    /* more than one partion */
-                    if (counter)
-                    {
-                        /* set dst_layer 1 info*/
-                        obj.dst_layer.top = 0;
-                        obj.dst_layer.left = 0;
-                        obj.dst_layer.width = dst_width/dou;    
-                        obj.dst_layer.height = dst_height/dou;
-                        /* display obj 1*/
-                        ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
-                        counter--;
-                    }
-
-                    if (counter != 0)
-                    {
-                        /* set dst_layer 2 info*/
-                        obj.dst_layer.top = 0;
-                        obj.dst_layer.left = dst_width/dou;
-                        obj.dst_layer.width = dst_width/dou;
-                        obj.dst_layer.height = dst_height/dou;//400;
-                        /* display obj 1*/
-                        ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
-                        counter--;
-                    }
-
-                    if (counter)
-                    {
-                        /* set dst_layer 3 info*/
-                        obj.dst_layer.top = dst_height/dou;//400;
-                        obj.dst_layer.left = 0;
-                        obj.dst_layer.width = dst_width/dou;
-                        obj.dst_layer.height = dst_height/dou;//400;
-                        /* display obj 1*/
-                        ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
-                        counter--;
-                    }
-
-                    if (counter)
-                    {
-                        /* set dst_layer 4 info*/
-                        obj.dst_layer.top = dst_height/dou;//400;
-                        obj.dst_layer.left = dst_width/dou;
-                        obj.dst_layer.width = dst_width/dou;
-                        obj.dst_layer.height = dst_height/dou;//400;
-                        /* display obj 1*/
-                        ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
-                        counter--;
-                    }
-
-                }
-
-                /* flush to screen */
-                int cmd = AK_VO_REFRESH_VIDEO_GROUP & 0x100;
-                cmd |= AK_VO_REFRESH_GUI_GROUP & 0x10000;
-                ak_vo_refresh_screen(cmd);
-
-                /* finish one file show */
-                //posix_fadvise(fileno(fp), 0, len, POSIX_FADV_DONTNEED);
-                fclose(fp);
-            }
-            else
-            {
-                ak_print_error_ex(MODULE_ID_VO, "open file [%s] filed!\n", file_path);	
-            }
-        }
-        ret = AK_SUCCESS;
-    }
-
-err:
-    /* if err or finish, release the src */
-    if(data)
-        ak_mem_dma_free(data);
-
-    /* destroy the layer, release the src */
-    ak_vo_destroy_layer(AK_VO_LAYER_VIDEO_1);
-    ak_vo_destroy_layer(AK_VO_LAYER_GUI_1);
-
-    /* close the vo */
-    ak_vo_close(DEV_NUM);
-
-    return ret;
-}
-
-#ifdef AK_RTOS
-MSH_CMD_EXPORT(ak_vo_sample, vo sample)
-#endif
-
-
-void vo_set_param(void){
     screen_flag = 1;    //"显示屏幕类型 0 - MIPI, 1 - RGB" 
 	display_num = 1;    //"分屏数目 [1, 4]" 
 	data_format = 5;    //"[NUM] 数据输入格式 0:RGB565 1:RGB888 2:BGR565 3:BGR888 4:YUV420P 5:YUV420SP 6:ARGB8888 7:RGBA8888 8:ABGR8888 9:BGRA8888 10:TILED32X4" 
@@ -448,7 +56,8 @@ void vo_set_param(void){
 	logo_file = "/mnt/anyka.logo.577.160.rgb"; //"logo 文件的路径，只支持提供的anyka.logo.577.160.rgb文件显示"
 }
 
-int vo_init(void){
+int vo_init(void)
+{
 
 	if (display_num < 0 || display_num > MAX_DIS_NUM)
 	{
@@ -456,26 +65,23 @@ int vo_init(void){
 		return FAILED;
 	}
 
-	ret = 0;
+	int ret = 0;
 	/* get the res and rotation */
-	int dst_width = 0;
-	int dst_height = 0;
-	int rotate = 0;
 
 	/* get the screen res */
 	if (screen_flag == 1)
 	{
 		/* 1 means for RGB */
-		dst_width = RGB_SC_WIDTH;
-		dst_height = RGB_SC_HEIGHT;
-		rotate = AK_GP_ROTATE_NONE;
+		vo_param.dst_width = RGB_SC_WIDTH;
+		vo_param.dst_height = RGB_SC_HEIGHT;
+		vo_param.rotate = AK_GP_ROTATE_NONE;
 	}
 	else if (screen_flag == 0)
 	{
 		/* 0 means for MIPI */
-		dst_width = MIPI_SC_WIDTH;
-		dst_height = MIPI_SC_HEIGHT;
-		rotate = AK_GP_ROTATE_90;
+		vo_param.dst_width = MIPI_SC_WIDTH;
+		vo_param.dst_height = MIPI_SC_HEIGHT;
+		vo_param.rotate = AK_GP_ROTATE_90;
 	}
 	else
 	{
@@ -487,10 +93,10 @@ int vo_init(void){
 	struct ak_vo_param	param;
 
 	/* fill the struct ready to open */
-	param.width = dst_width;//1280;
-	param.height = dst_height;// 800;
+	param.width = vo_param.dst_width;//1280;
+	param.height = vo_param.dst_height;// 800;
 	param.format = out_format;  //format to output
-	param.rotate = rotate;    //rotate value
+	param.rotate = vo_param.rotate;    //rotate value
 
 	/* open vo */
 	ret = ak_vo_open(&param, DEV_NUM);      //open vo
@@ -499,13 +105,13 @@ int vo_init(void){
 	{
 		/* open failed return -1 */
 		ak_print_error_ex(MODULE_ID_VO, "ak_vo_open failed![%d]\n", ret);
-		return AK_FAILED;
+		return FAILED;
 	}
 
 	/* create the video layer */
 	struct ak_vo_layer_in video_layer;
-	video_layer.create_layer.height = dst_height;   //800; //get the res
-	video_layer.create_layer.width = dst_width;    //1280; //get the res
+	video_layer.create_layer.height = vo_param.dst_height;   //800; //get the res
+	video_layer.create_layer.width = vo_param.dst_width;    //1280; //get the res
 	/* just from (0,0) */
 	video_layer.create_layer.left = 0;         //layer left pos
 	video_layer.create_layer.top = 0;         // layer top pos
@@ -518,7 +124,7 @@ int vo_init(void){
 		/* if failed, close the vo */
 		ak_print_error_ex(MODULE_ID_VO, "ak_vo_create_video_layer failed![%d]\n", ret);
 		ak_vo_close(DEV_NUM);       // if failed, close the vo
-		return AK_FAILED;
+		return FAILED;
 	}
 
 	/* create the gui layer */
@@ -543,14 +149,14 @@ int vo_init(void){
 		ak_print_error_ex(MODULE_ID_VO, "ak_vo_create_gui_layer failed![%d]\n", ret);
 		ak_vo_destroy_layer(AK_VO_LAYER_VIDEO_1);
 		ak_vo_close(DEV_NUM);
-		return AK_FAILED;
+		return FAILED;
 	}
 
 	/* use the double buff mode */
 	ak_vo_set_fbuffer_mode(AK_VO_BUFF_DOUBLE);
 
 	/* support the yuv 420p */
-	int len = (1920 * 1080 * 3) / 2;
+	vo_param.len = (1920 * 1080 * 3) / 2;
 
 	/* get the size of the pixel */
 	switch (data_format)
@@ -558,19 +164,19 @@ int vo_init(void){
 		/* 565 */
 	case GP_FORMAT_RGB565:
 	case GP_FORMAT_BGR565:
-		len = 1920 * 1080 * 2;
+		vo_param.len = 1920 * 1080 * 2;
 		break;
 		/* 888 */
 	case GP_FORMAT_BGR888:
 	case GP_FORMAT_RGB888:
-		len = 1920 * 1080 * 3;
+		vo_param.len = 1920 * 1080 * 3;
 		break;
 		/* 8888 */
 	case GP_FORMAT_ABGR8888:
 	case GP_FORMAT_ARGB8888:
 	case GP_FORMAT_RGBA8888:
 	case GP_FORMAT_BGRA8888:
-		len = 1920 * 1080 * 4;
+		vo_param.len = 1920 * 1080 * 4;
 		break;
 		/* YUV */
 	case GP_FORMAT_YUV420P:
@@ -580,19 +186,96 @@ int vo_init(void){
 		ak_print_error_ex(MODULE_ID_VO, "here not support the tileyuv data\n");
 
 	}
+    return SUCCESS;
+}
 
-	// void* data = ak_mem_dma_alloc(MODULE_ID_VO, len);
-	// if (data == NULL)
-	// {
-	// 	ak_print_error_ex(MODULE_ID_VO, "Can't malloc DMA memory!\n");
-	// 	ret = AK_FAILED;
-	// 	goto err;
-	// }
+//传入图像数据，并输出
+void vo_put_one_frame(void *data)
+{
+    int ret = 0;
+    memset(data, 0, vo_param.len);
+    /* obj add */
+    struct ak_vo_obj obj;
 
-	/* 1-4 partion screen to show the picture */
-	int dou = 1;
-	if (display_num == 1)
-		dou = 1;
-	else
-		dou = 2;
+    /* set obj src info*/	
+    obj.format = data_format;
+    obj.cmd = GP_OPT_SCALE;
+    obj.vo_layer.width = 1920;
+    obj.vo_layer.height = 1080;
+    obj.vo_layer.clip_pos.top = 0;
+    obj.vo_layer.clip_pos.left = 0;
+    obj.vo_layer.clip_pos.width = 1920;
+    obj.vo_layer.clip_pos.height = 1080;
+
+    ak_mem_dma_vaddr2paddr(data, &(obj.vo_layer.dma_addr));
+
+    /* show as the screen partion set */
+    int counter = display_num;
+    if (display_num == 1)
+    {
+        /* set dst_layer 1 info*/
+        obj.dst_layer.top = 0;
+        obj.dst_layer.left = 0;
+        obj.dst_layer.width = vo_param.dst_width;
+        obj.dst_layer.height = vo_param.dst_height;
+        /* display obj 1*/
+        ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
+    }
+    else
+    {
+        /* more than one partion */
+        if (counter)
+        {
+            /* set dst_layer 1 info*/
+            obj.dst_layer.top = 0;
+            obj.dst_layer.left = 0;
+            obj.dst_layer.width = vo_param.dst_width/vo_param.dou;    
+            obj.dst_layer.height = vo_param.dst_height/vo_param.dou;
+            /* display obj 1*/
+            ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
+            counter--;
+        }
+
+        if (counter != 0)
+        {
+            /* set dst_layer 2 info*/
+            obj.dst_layer.top = 0;
+            obj.dst_layer.left = vo_param.dst_width/vo_param.dou;
+            obj.dst_layer.width = vo_param.dst_width/vo_param.dou;
+            obj.dst_layer.height = vo_param.dst_height/vo_param.dou;//400;
+            /* display obj 1*/
+            ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
+            counter--;
+        }
+
+        if (counter)
+        {
+            /* set dst_layer 3 info*/
+            obj.dst_layer.top = vo_param.dst_height/vo_param.dou;//400;
+            obj.dst_layer.left = 0;
+            obj.dst_layer.width = vo_param.dst_width/vo_param.dou;
+            obj.dst_layer.height = vo_param.dst_height/vo_param.dou;//400;
+            /* display obj 1*/
+            ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
+            counter--;
+        }
+
+        if (counter)
+        {
+            /* set dst_layer 4 info*/
+            obj.dst_layer.top = vo_param.dst_height/vo_param.dou;//400;
+            obj.dst_layer.left = vo_param.dst_width/vo_param.dou;
+            obj.dst_layer.width = vo_param.dst_width/vo_param.dou;
+            obj.dst_layer.height = vo_param.dst_height/vo_param.dou;//400;
+            /* display obj 1*/
+            ak_vo_add_obj(&obj, AK_VO_LAYER_VIDEO_1);
+            counter--;
+        }
+
+    }
+
+    /* flush to screen */
+    int cmd = AK_VO_REFRESH_VIDEO_GROUP & 0x100;
+    // cmd |= AK_VO_REFRESH_GUI_GROUP & 0x10000;
+    ak_vo_refresh_screen(cmd);
 }

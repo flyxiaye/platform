@@ -201,7 +201,7 @@ int vi_init(void)
 }
 
 //传入视频帧的指针
-void vi_get_one_frame(struct video_input_frame *frame, int fream_len)
+int vi_get_one_frame(struct video_input_frame *frame, int fream_len)
 {
 	// struct video_input_frame frame;
 	memset(frame, 0x00, fream_len);
