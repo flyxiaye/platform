@@ -36,7 +36,7 @@ void test2(void)
 		ret = vi_get_one_frame(&frame, sizeof(frame));
 		if (ret == SUCCESS)
 		{
-			ak_print_error_ex(MODULE_ID_VI, "vi frame get successed!");
+			// ak_print_error_ex(MODULE_ID_VI, "vi frame get successed!");
 			vo_put_one_frame(frame.vi_frame.data);
 			vi_release_one_frame(&frame);
 		}

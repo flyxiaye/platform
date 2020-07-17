@@ -193,7 +193,7 @@ int vo_init(void)
 void vo_put_one_frame(void *data)
 {
     int ret = 0;
-    memset(data, 0, vo_param.len);
+    // memset(data, 0, vo_param.len);
     /* obj add */
     struct ak_vo_obj obj;
 
