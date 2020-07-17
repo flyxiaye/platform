@@ -4,7 +4,7 @@
 
 #include "ak_common.h"
 #include "ak_vi.h"
-#include "ak_vo.h"
+// #include "ak_vo.h"
 #include "ak_log.h"
 
 void test2(void)
@@ -31,10 +31,12 @@ void test2(void)
 	}
 
 	struct video_input_frame frame;
-	while (1){
+	while (1)
+	{
 		ret = vi_get_one_frame(&frame, sizeof(frame));
 		if (ret == SUCCESS)
 		{
+			ak_print_error_ex(MODULE_ID_VI, "vi frame get successed!");
 			vo_put_one_frame(frame.vi_frame.data);
 			vi_release_one_frame(&frame);
 		}
