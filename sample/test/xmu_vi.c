@@ -209,6 +209,7 @@ int vi_get_one_frame(struct video_input_frame *frame, int fream_len)
 	if (!ret)
 		return SUCCESS;
 	else
+		ak_sleep_ms(10);
 		return FAILED;
 }
 
