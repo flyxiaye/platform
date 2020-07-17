@@ -40,7 +40,7 @@ void test3(void)	//多线程编码
 
 	struct video_input_frame frame;
 	enc_pair_set_source(&frame);
-	venc_start(); 	//线程启动
+	// venc_start(); 	//线程启动
 	while (1)
 	{
 		ret = vi_get_one_frame(&frame, sizeof(frame));
@@ -48,7 +48,7 @@ void test3(void)	//多线程编码
 		{
 			ak_print_normal(MODULE_ID_VI, "vi frame get successed!");
 			vo_put_one_frame(frame.vi_frame.data);
-			venc_thread_sem_post(); 	//通知编码线程启动
+			// venc_thread_sem_post(); 	//通知编码线程启动
 
 			vi_release_one_frame(&frame);
 		}
