@@ -211,3 +211,8 @@ int vi_get_one_frame(struct video_input_frame *frame, int fream_len)
 	else
 		return FAILED;
 }
+
+void vi_release_one_frame(struct video_input_frame *frame)
+{
+	ak_vi_release_frame(channel_num, frame);
+}

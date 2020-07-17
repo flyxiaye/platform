@@ -5,9 +5,9 @@
 #include "ak_common.h"
 #include "ak_vi.h"
 
-int main(int argc, char** argv)
+void test2(void)
 {
-	// 	/* start the application */
+	/* start the application */
 	sdk_run_config config;
 	config.mem_trace_flag = SDK_RUN_DEBUG;
 	ak_sdk_init(&config);
@@ -19,14 +19,24 @@ int main(int argc, char** argv)
 
 	int ret = 0; 
 	struct video_input_frame frame;
-	while (1)
-	ret = vi_get_one_frame(&frame, sizeof(frame));
-	if (ret == SUCCESS)
-	{
-		vo_put_one_frame(frame.vi_frame.data);
+	while (1){
+		ret = vi_get_one_frame(&frame, sizeof(frame));
+		if (ret == SUCCESS)
+		{
+			vo_put_one_frame(frame.vi_frame.data);
+			vi_release_one_frame(&frame);
+		}
+		
 	}
-
 }
+
+
+int main(int argc, char** argv)
+{
+	test2(); //实时显示
+}
+
+
 // //#include <stdio.h>
 // //
 // //int main(void)
