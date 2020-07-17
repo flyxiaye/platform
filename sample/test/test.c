@@ -48,7 +48,7 @@ void test3(void)	//多线程编码
 		{
 			// ak_print_error_ex(MODULE_ID_VI, "vi frame get successed!");
 			vo_put_one_frame(frame.vi_frame.data);
-			venc_thread_sem_post(); 	//通知编码线程启动
+			// venc_thread_sem_post(); 	//通知编码线程启动
 
 			vi_release_one_frame(&frame);
 		}
@@ -101,7 +101,7 @@ void test2(void)
 
 int main(int argc, char** argv)
 {
-	test2(); //实时显示
+	// test2(); //实时显示
 	test3(); //多线程编码
 }
 
