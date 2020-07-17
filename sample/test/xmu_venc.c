@@ -89,7 +89,9 @@ void *video_encode_from_vi_th(void *arg)
 
     while(1)
     {
+        ak_print_normal(MODULE_ID_VENC, "behind enc\n");
         ak_thread_sem_wait(&enc_sem);  //线程等待信号量
+        ak_print_normal(MODULE_ID_VENC, "after enc\n");
         int ret = ak_venc_encode_frame(venc_th->venc_handle, frame->vi_frame.data, frame->vi_frame.len, frame->mdinfo, stream);
         if (ret)
         {
