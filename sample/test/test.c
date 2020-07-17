@@ -4,7 +4,7 @@
 
 #include "ak_common.h"
 #include "ak_vi.h"
-#include "ak_vo.h"
+//#include "ak_vo.h"
 #include "ak_log.h"
 
 void test2(void)
