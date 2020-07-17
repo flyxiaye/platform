@@ -177,7 +177,6 @@ int venc_init(void)
     {
         ak_print_error_ex(MODULE_ID_VDEC, "please input the type\n");
         /* print the hint and notice */
-        help_hint();
         return FAILED;
     }
     /* check the chn index value */
@@ -185,7 +184,6 @@ int venc_init(void)
     {
         ak_print_error_ex(MODULE_ID_VDEC, "please input the correct param\n");
         /* print the hint and notice */
-        help_hint();
         return FAILED;
     }
     /* get the type for input */

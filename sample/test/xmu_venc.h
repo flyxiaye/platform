@@ -2,6 +2,6 @@
 #define XMU_VENC_H
 
 void venc_set_param(void);
-void venc_init(void);
+int venc_init(void);
 
 #endif
