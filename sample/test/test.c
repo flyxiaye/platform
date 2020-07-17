@@ -46,7 +46,7 @@ void test3(void)	//多线程编码
 		ret = vi_get_one_frame(&frame, sizeof(frame));
 		if (ret == SUCCESS)
 		{
-			// ak_print_error_ex(MODULE_ID_VI, "vi frame get successed!");
+			ak_print_normal(MODULE_ID_VI, "vi frame get successed!");
 			vo_put_one_frame(frame.vi_frame.data);
 			venc_thread_sem_post(); 	//通知编码线程启动
 
@@ -88,7 +88,7 @@ void test2(void)
 		ret = vi_get_one_frame(&frame, sizeof(frame));
 		if (ret == SUCCESS)
 		{
-			// ak_print_error_ex(MODULE_ID_VI, "vi frame get successed!");
+			//ak_print_normal(MODULE_ID_VI, "vi frame get successed!");
 			vo_put_one_frame(frame.vi_frame.data);
 			vi_release_one_frame(&frame);
 		}
