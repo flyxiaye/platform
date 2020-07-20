@@ -1,6 +1,7 @@
 #include "xmu_vi.h"
 #include "xmu_vo.h"
 #include "xmu_venc.h"
+#include "xmu_vdec.h"
 #include "xmu_common.h"
 
 #include "ak_common.h"
@@ -18,6 +19,8 @@ void test3(void)	//多线程编码
 	vo_set_param();
 	vi_set_param();
 	venc_set_param();
+	vdec_set_param();
+
 	int ret = 0;
 	ret = vo_init();
 	if (ret == FAILED)
@@ -37,23 +40,33 @@ void test3(void)	//多线程编码
 		ak_print_error_ex(MODULE_ID_VENC, "venc init failed!");
 		return;
 	}
+	// ret = vdec_inti();
+	// if (ret == FAILED)
+	// {
+	// 	ak_print_error_ex(MODULE_ID_VDEC, "vdec init failed!");
+	// 	return;
+	// }
 
 	struct video_input_frame frame;
 	enc_pair_set_source(&frame);
-	// venc_start(); 	//线程启动
+	venc_start(); 	//线程启动
+	// vdec_start();
 	while (1)
 	{
+		// ak_print_normal(MODULE_ID_VI, "aaa\n!");
+		// venc_thread_sem_post(); 	//通知编码线程启动
 		ret = vi_get_one_frame(&frame, sizeof(frame));
 		if (ret == SUCCESS)
 		{
-			ak_print_normal(MODULE_ID_VI, "vi frame get successed!");
+			// ak_print_normal(MODULE_ID_VI, "vi frame get successed!");
 			vo_put_one_frame(frame.vi_frame.data);
-			// venc_thread_sem_post(); 	//通知编码线程启动
+			venc_thread_sem_post(); 	//通知编码线程启动
 
 			vi_release_one_frame(&frame);
 		}
 		
 	}
+	// vdec_close();
 	venc_close();
 	vi_close();
 	vo_close();
@@ -81,6 +94,13 @@ void test2(void)
 		ak_print_error_ex(MODULE_ID_VI, "vi init failed!");
 		return;
 	}
+	// ret = vdec_inti();
+	// if (ret == FAILED)
+	// {
+	// 	ak_print_error_ex(MODULE_ID_VDEC, "vdec init failed!");
+	// 	return;
+	// }
+	// vdec_start();
 
 	struct video_input_frame frame;
 	while (1)
@@ -94,15 +114,32 @@ void test2(void)
 		}
 		
 	}
+	// vdec_close();
 	vi_close();
 	vo_close();
+}
+
+void test4()
+{
+	sdk_run_config config;
+	config.mem_trace_flag = SDK_RUN_DEBUG;
+	ak_sdk_init(&config);
+	
+	vdec_set_param();
+	ak_print_normal(MODULE_ID_VDEC, "vdec init");
+	vdec_init();
+	ak_print_normal(MODULE_ID_VDEC, "vdec start");
+	vdec_start();
+	vdec_close();
 }
 
 
 int main(int argc, char** argv)
 {
 	// test2(); //实时显示
-	test3(); //多线程编码
+	// test3(); //多线程编码
+	// test4();
+	vdec_open_test();
 }
 
 

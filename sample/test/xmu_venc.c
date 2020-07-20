@@ -16,6 +16,7 @@
 
 #include "xmu_common.h"
 #include "xmu_venc.h"
+#include "xmu_vdec.h"
 
 #ifdef AK_RTOS
 #include "rtthread.h"
@@ -89,11 +90,11 @@ void *video_encode_from_vi_th(void *arg)
 
     while(1)
     {
-        // ak_print_normal(MODULE_ID_VENC, "behind enc\n");
-        // ak_thread_sem_wait(&enc_sem);  //线程等待信号量
-        if (-1 == ak_thread_sem_trywait(&enc_sem))
-            continue;
-        ak_print_normal(MODULE_ID_VENC, "after enc\n");
+        // ak_print_normal(MODULE_ID_VENC, "before enc\n");
+        ak_thread_sem_wait(&enc_sem);  //线程等待信号量
+        // if (-1 == ak_thread_sem_trywait(&enc_sem))
+        //     continue;
+        // ak_print_normal(MODULE_ID_VENC, "after enc\n");
         int ret = ak_venc_encode_frame(venc_th->venc_handle, frame->vi_frame.data, frame->vi_frame.len, frame->mdinfo, stream);
         if (ret)
         {
@@ -104,8 +105,11 @@ void *video_encode_from_vi_th(void *arg)
         {
             //将stream data 通过udp协议传送给另一台机器
             // fwrite(stream->data, stream->len, 1, save_fp);
+            //==========for test===========//
+            
+            //==========for test end===========//
             // ak_thread_sem_wait(&enc_sem); //等待UDP发送完毕
-            ak_print_normal(MODULE_ID_VENC, "venc successed! stream size is %d\n", stream->len);
+            // ak_print_normal(MODULE_ID_VENC, "venc successed! stream size is %d\n", stream->len);
             ak_venc_release_stream(venc_th->venc_handle, stream);
         }
     }
@@ -238,7 +242,7 @@ int venc_init(void)
     enc_pair.en_type     = encoder_type;
 
     //信号量初始化
-    ret = ak_thread_sem_init(&enc_sem, 0);
+    ret = ak_thread_sem_init(&enc_sem, 1);
     if (ret)
     {
         ak_print_error_ex(MODULE_ID_VENC, "thread sem init failed");
@@ -252,12 +256,13 @@ void venc_start(void)
         /* create the venc thread */
     ak_thread_create(&venc_stream_th, video_encode_from_vi_th, &enc_pair, ANYKA_THREAD_MIN_STACK_SIZE, THREAD_PRIO);
 
-    /* WAITER for the thread exit */
-    ak_thread_join(venc_stream_th);
+
 }
 
 void venc_close(void)
 {
+    /* WAITER for the thread exit */
+    ak_thread_join(venc_stream_th);
     if(enc_pair.venc_handle != -1)
     {
         /* close the venc*/
