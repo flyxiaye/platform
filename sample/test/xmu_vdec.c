@@ -14,6 +14,7 @@
 #include "ak_mem.h"
 
 #include "xmu_common.h"
+#include "xmu_vo.h"
 
 #ifdef AK_RTOS
 #include "rtthread.h"
@@ -95,6 +96,7 @@ static void decode_stream(int handle_id, unsigned char *data, int read_len)
     while (read_len > 0)
     {
         /* send stream to decode */
+        ak_print_normal(MODULE_ID_VDEC, "data=%d, len=%d\n", data, read_len);
         ret = ak_vdec_send_stream(handle_id, &data[send_len], read_len, 1, &dec_len);
         if (ret !=  0)
         {
@@ -111,10 +113,11 @@ static void decode_stream(int handle_id, unsigned char *data, int read_len)
 void *vdec_send_decode_th(void *arg)
 {
     ak_thread_set_name("vdec_demo_test");
-    vdec_data.data = (unsigned char *)ak_mem_alloc(MODULE_ID_VDEC, RECORD_READ_LEN);
-    vdec_data.data_len = RECORD_READ_LEN;
+    // vdec_data.data = (unsigned char *)ak_mem_alloc(MODULE_ID_VDEC, RECORD_READ_LEN);
+    // vdec_data.data_len = RECORD_READ_LEN;
     int *handle_id = (int *)arg;
     // int read_len = 0;
+    ak_thread_sem_wait(&dec_sem[*handle_id]);
     int total_len = 0;
     /* loop for sending data to decode */
     do
@@ -151,14 +154,17 @@ void *vdec_send_decode_th(void *arg)
 void *vdec_solo_frame(void *arg)
 {
 
+    int *handle_id = (int *)arg;
+    
     /* read video file stream and send to decode, */
     int read_len = 0;
     int total_len = 0;
     // unsigned char *data = NULL;
-    vdec_data.data = (unsigned char *)ak_mem_alloc(MODULE_ID_VDEC, RECORD_READ_LEN);
-    vdec_data.data_len = RECORD_READ_LEN;
+    // vdec_data.data = (unsigned char *)ak_mem_alloc(MODULE_ID_VDEC, RECORD_READ_LEN);
+    // vdec_data.data_len = RECORD_READ_LEN;
     while(1)
     {
+        ak_thread_sem_wait(&dec_sem[*handle_id]);
         /* send the data to decode */
         ak_print_normal(MODULE_ID_VDEC, "size is [%d] \n", vdec_data.data_len);
         if(vdec_data.data_len > 0)
@@ -194,9 +200,9 @@ void *vdec_solo_frame(void *arg)
             {
                 //TODO:
                 /* set frame status */
-                // demo_play_func(&frame);
+                // vo_put_one_frame(frame.frame_obj.data);
                 //thread should wait for data dealing
-
+                ak_print_normal(MODULE_ID_VDEC, "vdec success\n");
                 /* relase the frame and push back to decoder */
                 ak_vdec_release_frame(*handle_id, &frame);
                 break;
@@ -316,7 +322,7 @@ void vdec_set_param(void)
     "解码数据格式 val：h264 h265 jpeg",
     "码流分辨率，max�?560*1920";*/
     decoder_num = 1;     //"解码的数�?：[1-4]"
-    type = "h264";   //"解码数据格式 val：h264 h265 jpeg"
+    type = "jpeg";   //"解码数据格式 val：h264 h265 jpeg"
     res = 3;  //"码流分辨率，0 - 640*360, 1 - 640*480, 2 - 1280*720, 3 - 1920*1080, 4 - 2560*1920
 }
 
@@ -388,7 +394,7 @@ int vdec_init(void)
     //sem init
     for (int k = 0; k < decoder_num; k++)
     {
-        int ret = ak_thread_sem_init(&dec_sem[k], 1);
+        int ret = ak_thread_sem_init(&dec_sem[k], 0);
         if (ret)
         {
             ak_print_error_ex(MODULE_ID_VENC, "dec thread sem init failed");
@@ -400,7 +406,7 @@ int vdec_init(void)
 
 void vdec_start(void)
 {
-    int handleid = 1;
+    // int handleid = 1;
     int i = 0;
     param.vdec_type = AK_CODEC_MJPEG;
     param.sc_height = 1080;         //vdec height res set
@@ -411,7 +417,7 @@ void vdec_start(void)
     {
         /* open the vdec */
         // int ret = ak_vdec_open(&param, &handle_id[i]);
-        int ret = ak_vdec_open(&param, &handleid);
+        int ret = ak_vdec_open(&param, &handle_id[i]);
         ak_print_normal(MODULE_ID_VDEC, "handle id is %d\n", handle_id[i]);
         if(ret != 0)
         {
@@ -421,29 +427,30 @@ void vdec_start(void)
             return;
         }
         
-        // ak_thread_mutex_lock(&refresh_flag_lock);
-        // /* refresh flag to record */
-        // refresh_record_flag |= (1 << handle_id[i]);
-        // ak_thread_mutex_unlock(&refresh_flag_lock);
+        ak_thread_mutex_lock(&refresh_flag_lock);
+        /* refresh flag to record */
+        refresh_record_flag |= (1 << handle_id[i]);
+        ak_thread_mutex_unlock(&refresh_flag_lock);
 
-        // /* mode == 1 means the solo frame decode */
-        // if (mode)
-        // {   
-        //     /* if decode the jpeg data */
-        //     ak_pthread_t jpeg_stream_th;
-        //     ak_thread_create(&jpeg_stream_th, vdec_solo_frame, &handle_id[i], ANYKA_THREAD_MIN_STACK_SIZE, THREAD_PRIO);
-        // }
-        // else
-        // {
-        //     /* h264 or h265 decode, there is two thread */
-        //     /* get frame thread */
-        //     ak_pthread_t tid_stream_th;
-        //     ak_thread_create(&tid_stream_th, vdec_get_frame_th, &handle_id[i], ANYKA_THREAD_MIN_STACK_SIZE, THREAD_PRIO);
+        /* mode == 1 means the solo frame decode */
+        if (mode)
+        {   
+            /* if decode the jpeg data */
+            ak_pthread_t jpeg_stream_th;
+            ak_thread_create(&jpeg_stream_th, vdec_solo_frame, &handle_id[i], ANYKA_THREAD_MIN_STACK_SIZE, THREAD_PRIO);
+        }
+        else
+        {
+            ak_print_normal(MODULE_ID_VDEC, "handid = %d\n", handle_id[i]);
+            /* h264 or h265 decode, there is two thread */
+            /* get frame thread */
+            ak_pthread_t tid_stream_th;
+            ak_thread_create(&tid_stream_th, vdec_get_frame_th, &handle_id[i], ANYKA_THREAD_MIN_STACK_SIZE, THREAD_PRIO);
 
-        //     /* send stream thread */
-        //     ak_pthread_t pid;
-        //     ak_thread_create(&pid, vdec_send_decode_th, &handle_id[i], ANYKA_THREAD_MIN_STACK_SIZE, THREAD_PRIO);	
-        // }
+            /* send stream thread */
+            ak_pthread_t pid;
+            ak_thread_create(&pid, vdec_send_decode_th, &handle_id[i], ANYKA_THREAD_MIN_STACK_SIZE, THREAD_PRIO);	
+        }
         i++;
     }
 }
@@ -459,7 +466,7 @@ void vdec_close(void)
         i++;
     }
 
-    /* destroy the layer and close vo */
+    /* destroy the layern 1 and close vo */
     ak_vo_destroy_layer(AK_VO_LAYER_VIDEO_1);
     ak_vo_close(DEV_NUM);
     ak_thread_mutex_destroy(&refresh_flag_lock);
@@ -473,17 +480,23 @@ void vdec_set_vdec_data(unsigned char *data, int data_len)
 
 void vdec_thread_sem_post(void)
 {
-
+    ak_thread_sem_post(&dec_sem[0]);
 }
 
 void vdec_open_test()
 {
+    sdk_run_config config;
+	config.mem_trace_flag = SDK_RUN_DEBUG;
+	ak_sdk_init(&config);
+
     struct ak_vdec_param param = {0};
     int handleid = 0;
     param.vdec_type = AK_CODEC_MJPEG;
     param.sc_height = 1080;         //vdec height res set
     param.sc_width = 1920;          //vdec width res set
     param.output_type = AK_YUV420SP;
-    ak_vdec_open(&param, &handleid);
+    int ret = ak_vdec_open(&param, &handleid);
+    ak_print_normal(MODULE_ID_VDEC, "ret = %d\n", ret);
     ak_print_normal(MODULE_ID_VDEC, "open ok\n");
+    while(1);
 }

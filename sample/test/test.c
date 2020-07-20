@@ -40,21 +40,19 @@ void test3(void)	//多线程编码
 		ak_print_error_ex(MODULE_ID_VENC, "venc init failed!");
 		return;
 	}
-	// ret = vdec_inti();
-	// if (ret == FAILED)
-	// {
-	// 	ak_print_error_ex(MODULE_ID_VDEC, "vdec init failed!");
-	// 	return;
-	// }
+	ret = vdec_init();
+	if (ret == FAILED)
+	{
+		ak_print_error_ex(MODULE_ID_VDEC, "vdec init failed!");
+		return;
+	}
 
 	struct video_input_frame frame;
 	enc_pair_set_source(&frame);
 	venc_start(); 	//线程启动
-	// vdec_start();
+	vdec_start();
 	while (1)
 	{
-		// ak_print_normal(MODULE_ID_VI, "aaa\n!");
-		// venc_thread_sem_post(); 	//通知编码线程启动
 		ret = vi_get_one_frame(&frame, sizeof(frame));
 		if (ret == SUCCESS)
 		{
@@ -66,7 +64,7 @@ void test3(void)	//多线程编码
 		}
 		
 	}
-	// vdec_close();
+	vdec_close();
 	venc_close();
 	vi_close();
 	vo_close();
@@ -130,16 +128,18 @@ void test4()
 	vdec_init();
 	ak_print_normal(MODULE_ID_VDEC, "vdec start");
 	vdec_start();
+	while (1);
 	vdec_close();
+
 }
 
 
 int main(int argc, char** argv)
 {
 	// test2(); //实时显示
-	// test3(); //多线程编码
-	// test4();
-	vdec_open_test();
+	test3(); //多线程编码
+	// test4();	//multipe threads decode
+	// vdec_open_test();
 }
 
 

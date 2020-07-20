@@ -70,6 +70,7 @@ static struct resolution_t resolutions[DE_VIDEO_SIZE_MAX] = {
 
 //=============自己定义的变量============//
 static ak_sem_t enc_sem;  //编码线程信号量
+static ak_sem_t enc_udp_sem;  //wait for udp thread
 static struct venc_pair
 {
     int venc_handle;
@@ -106,10 +107,23 @@ void *video_encode_from_vi_th(void *arg)
             //将stream data 通过udp协议传送给另一台机器
             // fwrite(stream->data, stream->len, 1, save_fp);
             //==========for test===========//
-            
+            ak_print_normal(MODULE_ID_VENC, "venc successed! stream size is %d\n", stream->len);
+            // vdec_set_vdec_data(stream->data, stream->len);
+            // FILE *fp = NULL;
+            // fp = fopen("/tmp/0.jpeg", "w");
+            // if (fp != NULL)
+            // {
+            //     ak_print_normal(MODULE_ID_VDEC, "file open success\n");
+            //     fwrite(stream->data, stream->len, 1, fp);
+            //     fclose(fp);
+                
+            // }
+            // vdec_thread_sem_post();
             //==========for test end===========//
-            // ak_thread_sem_wait(&enc_sem); //等待UDP发送完毕
-            // ak_print_normal(MODULE_ID_VENC, "venc successed! stream size is %d\n", stream->len);
+            //send stream data
+            ak_thread_sem_wait(&enc_udp_sem); //等待UDP发送完毕
+            // ak_sleep_ms(10);
+            // while (1);
             ak_venc_release_stream(venc_th->venc_handle, stream);
         }
     }
@@ -120,7 +134,7 @@ void *video_encode_from_vi_th(void *arg)
 
 void venc_set_param(void)
 {
-    type = "h264";  //"编码输出数据格式 h264 h265 jpeg "
+    type = "jpeg";  //"编码输出数据格式 h264 h265 jpeg "
     main_res = 4;   //"主通道分辨率，0-5"
     sub_res = 1;    //"次通道分辨率，0-3 need smaller than main channel"
     chn_index = 0;  //"vi channel index, 0-main, 1-sub"
@@ -242,7 +256,8 @@ int venc_init(void)
     enc_pair.en_type     = encoder_type;
 
     //信号量初始化
-    ret = ak_thread_sem_init(&enc_sem, 1);
+    ret = ak_thread_sem_init(&enc_sem, 0);
+    ret += ak_thread_sem_init(&enc_udp_sem, 0);
     if (ret)
     {
         ak_print_error_ex(MODULE_ID_VENC, "thread sem init failed");
@@ -274,6 +289,11 @@ void venc_close(void)
 void venc_thread_sem_post(void)
 {
     ak_thread_sem_post(&enc_sem);
+}
+
+void venc_udp_thread_sem_post(void)
+{
+    ak_thread_sem_post(&enc_udp_sem);
 }
 
 
