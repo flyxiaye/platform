@@ -24,7 +24,11 @@ SRCDIR += .
 
 CSRCS += $(foreach d, $(SRCDIR), $(wildcard $d/*.c))
 
+# CPPSRCS += $(foreach d, $(SRCDIR), $(wildcard $d/*.cpp))
+
 COBJS += $(patsubst %.c, %.o, $(CSRCS))
+
+# CPPOBJS += $(patsubst %.cpp, %.o, $(CSRCS))
 
 LIB_DIR = $(TOPDIR)/lib
 
@@ -35,6 +39,7 @@ LD_FLAGS = $(LIBS) -L$(LIB_DIR)
 
 all: $(COBJS)
 	$(CC) $(COBJS) $(LD_FLAGS) -o $(TARGET)
+	# $(CXX) $(CPPOBJS) $(LD_FLAGS) -o $(TARGET)
 	$(STRIP) $(TARGET)
 
 install:
