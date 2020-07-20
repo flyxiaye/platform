@@ -2,6 +2,7 @@
 #include "xmu_vo.h"
 #include "xmu_venc.h"
 #include "xmu_vdec.h"
+#include "xmu_send_thread.h"
 #include "xmu_common.h"
 
 #include "ak_common.h"
@@ -46,11 +47,13 @@ void test3(void)	//多线程编码
 		ak_print_error_ex(MODULE_ID_VDEC, "vdec init failed!");
 		return;
 	}
+	send_thread_init();
+	send_thread_start();
 
 	struct video_input_frame frame;
 	enc_pair_set_source(&frame);
 	venc_start(); 	//线程启动
-	vdec_start();
+	// vdec_start();
 	while (1)
 	{
 		ret = vi_get_one_frame(&frame, sizeof(frame));
