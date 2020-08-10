@@ -9,7 +9,7 @@ dir_y += tde
 dir_y += ao
 dir_y += ai
 dir_y += drv
-dir_y += test
+#dir_y += test
 dir_y += APP
 
 all:

@@ -68,10 +68,10 @@ static struct resolution_t resolutions[DE_VIDEO_SIZE_MAX] = {
 char ac_option_hint[  ][ LEN_HINT ] = {                                         //操作提示数组
     "打印帮助信息" ,
     "屏幕类型 0 - mipi, 1 - rgb",
-    "解码的数�?：[1-4]",
+    "解码的数�?：[1-4]",
     "解码视频文件路径或JPEG文件目录路径" ,
     "解码数据格式 val：h264 h265 jpeg",
-    "码流分辨率，max�?560*1920",
+    "码流分辨率，max�?560*1920",
     "",
 };
 
@@ -82,7 +82,7 @@ struct option option_long[ ] = {
     { "decode-num"        , required_argument , NULL , 'n' } ,      //"解码数量" ,
     { "file-dir"          , required_argument , NULL , 'f' } ,      //"文件路径" ,
     { "format-in"         , required_argument , NULL , 'i' } ,      //"数据格式" ,
-    { "resolution"        , required_argument , NULL , 'r' } ,      //"分辨�? ,
+    { "resolution"        , required_argument , NULL , 'r' } ,      //"分辨�? ,
     { 0                   , 0                 , 0    , 0   } ,
 };
 
