@@ -16,6 +16,8 @@
 
 #include "xmu_common.h"
 #include "xmu_venc.h"
+#include "xmu_vdec.h"
+#include "xmu_send_thread.h"
 
 #ifdef AK_RTOS
 #include "rtthread.h"
@@ -69,6 +71,7 @@ static struct resolution_t resolutions[DE_VIDEO_SIZE_MAX] = {
 
 //=============自己定义的变量============//
 static ak_sem_t enc_sem;  //编码线程信号量
+static ak_sem_t enc_udp_sem;  //wait for udp thread
 static struct venc_pair
 {
     int venc_handle;
@@ -76,6 +79,7 @@ static struct venc_pair
     struct video_stream *stream;
     int en_type;
 }enc_pair;      //线程传递参数
+void stream2databuf(struct video_stream *stream);
 //=============自己定义的变量end============//
 
 void *video_encode_from_vi_th(void *arg)
@@ -104,9 +108,28 @@ void *video_encode_from_vi_th(void *arg)
         {
             //将stream data 通过udp协议传送给另一台机器
             // fwrite(stream->data, stream->len, 1, save_fp);
-            // ak_thread_sem_wait(&enc_sem); //等待UDP发送完毕
+            //==========for test===========//
             ak_print_normal(MODULE_ID_VENC, "venc successed! stream size is %d\n", stream->len);
+            //send stream data
+            int dat_len = stream->len + (unsigned int) + sizeof(unsigned long long) + sizeof(unsigned long) + sizeof(enum video_frame_type);
+            void * data = ak_mem_alloc(MODULE_ID_ALL, dat_len);
+            int start = 0;
+            memcpy(data, stream->data, stream->len);
+            start += stream->len;
+            memcpy(data + start, &stream->len, sizeof(unsigned int));
+            start += sizeof(unsigned int);
+            memcpy(data + start, &stream->ts, sizeof(unsigned long long));
+            start += sizeof(unsigned long long);
+            memcpy(data + start, &stream->seq_no, sizeof(unsigned long));
+            start += sizeof(unsigned long);
+            memcpy(data + start, &stream->frame_type, sizeof(enum video_frame_type));
+            send_thread_set_data(data, dat_len);
+            ak_thread_sem_wait(&enc_udp_sem); //等待UDP发送完毕
+            // ak_sleep_ms(10);
+            // while (1);
+            ak_mem_free(data);
             ak_venc_release_stream(venc_th->venc_handle, stream);
+            
         }
     }
     ak_mem_free(stream);
@@ -116,7 +139,7 @@ void *video_encode_from_vi_th(void *arg)
 
 void venc_set_param(void)
 {
-    type = "h264";  //"编码输出数据格式 h264 h265 jpeg "
+    type = "jpeg";  //"编码输出数据格式 h264 h265 jpeg "
     main_res = 4;   //"主通道分辨率，0-5"
     sub_res = 1;    //"次通道分辨率，0-3 need smaller than main channel"
     chn_index = 0;  //"vi channel index, 0-main, 1-sub"
@@ -239,6 +262,7 @@ int venc_init(void)
 
     //信号量初始化
     ret = ak_thread_sem_init(&enc_sem, 0);
+    ret += ak_thread_sem_init(&enc_udp_sem, 0);
     if (ret)
     {
         ak_print_error_ex(MODULE_ID_VENC, "thread sem init failed");
@@ -252,12 +276,13 @@ void venc_start(void)
         /* create the venc thread */
     ak_thread_create(&venc_stream_th, video_encode_from_vi_th, &enc_pair, ANYKA_THREAD_MIN_STACK_SIZE, THREAD_PRIO);
 
-    /* WAITER for the thread exit */
-    ak_thread_join(venc_stream_th);
+
 }
 
 void venc_close(void)
 {
+    /* WAITER for the thread exit */
+    ak_thread_join(venc_stream_th);
     if(enc_pair.venc_handle != -1)
     {
         /* close the venc*/
@@ -271,8 +296,17 @@ void venc_thread_sem_post(void)
     ak_thread_sem_post(&enc_sem);
 }
 
+void venc_udp_thread_sem_post(void)
+{
+    ak_thread_sem_post(&enc_udp_sem);
+}
+
 
 void enc_pair_set_source(struct video_input_frame *frame)
 {
     enc_pair.frame = frame;
+}
+
+void stream2databuf(struct video_stream *stream){
+
 }

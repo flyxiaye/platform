@@ -10,6 +10,7 @@ dir_y += ao
 dir_y += ai
 dir_y += drv
 dir_y += test
+dir_y += APP
 
 all:
 	@for i in $(dir_y); \
