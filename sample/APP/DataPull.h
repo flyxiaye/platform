@@ -6,10 +6,11 @@
 class DataPull
 {
 public:
-	DataPull();
+	//DataPull();
+	DataPull(int module_id, int bf_size);
 	~DataPull();
-	void data_play();
-	void data_decode();
+	virtual void data_play() = 0;
+	virtual void data_decode() = 0;
 
 private:
 	DataBuffer dbf;

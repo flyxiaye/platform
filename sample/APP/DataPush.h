@@ -8,8 +8,8 @@ class DataPush :BaseThread
 public:
 	DataPush(int module_id, int bf_size);
 	~DataPush();
-	void data_collect();
-	void data_encode();
+	virtual void data_collect() = 0;
+	virtual void data_encode() = 0;
 
 private:
 	DataBuffer dbf;

@@ -10,8 +10,8 @@ class DataBuffer
 public:
 	DataBuffer(int module_id, int size = 10240);
 	~DataBuffer();
-	int rb_write(unsigned char* src, int write_len);
-	int rb_read(unsigned char* dst, int read_len, int* result);
+	int rb_write(const unsigned char * src, int write_len);
+	int rb_read(const unsigned char * dst, int read_len, int* result);
 	int rb_get_buffer_id() { return buffer_id; }
 
 private:
