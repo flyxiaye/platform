@@ -56,7 +56,7 @@ void vi_set_param(void)
 //正确返回0, 错误返回1
 int vi_init(void)
 {
-    	/*check param validate*/
+    /*check param validate*/
 	if (channel_num < 0 || channel_num > 2 || strlen(isp_path) == 0)
 	{
 		ak_print_error_ex(MODULE_ID_VI, "INPUT param error!\n");

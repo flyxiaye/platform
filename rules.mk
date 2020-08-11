@@ -36,3 +36,8 @@ export CLIB := $(ARM_LIBC_PATH)/libm.a $(ARM_LIBC_PATH)/libc.a  $(ARM_LIBGCC_PAT
 	@echo ---------------------[build $<]----------------------------------
 	$(CC) -c $(CFLAGS) $(INCLUDE) -o $@ $<
 
+# ----------------------------- c -> o
+%.o:%.cpp
+	@echo ---------------------[build $<]----------------------------------
+	$(CXX) -c $(INCLUDE) -o $@ $<
+
