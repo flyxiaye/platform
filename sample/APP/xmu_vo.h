@@ -12,28 +12,9 @@ extern "C"{
 #include "ak_mem.h"
 }
 
-#ifdef AK_RTOS
-#include "rtthread.h"
-#define THREAD_PRIO 90
-#else
-#define THREAD_PRIO -1
-#endif
+// #define DE_VIDEO_SIZE_MAX    5
+// #define MAX_DE_NUM   4
 
-#define RECORD_READ_LEN      1024*100 /* read video file buffer length */
-#define DE_VIDEO_SIZE_MAX    5
-/* this is length for parse */
-#define LEN_HINT                512
-#define LEN_OPTION_SHORT        512
-
-/* mipi screen res */
-#define MIPI_SC_WIDTH 1280
-#define MIPI_SC_HEIGHT 800
-
-/* RGB screen res */
-#define RGB_SC_WIDTH  1024
-#define RGB_SC_HEIGHT  600
-
-#define MAX_DE_NUM   4
 
 /* resolation define */
 struct resolution_t {
@@ -42,8 +23,7 @@ struct resolution_t {
 	unsigned char str[20];
 };
 
-/* decoder resolution */
-static struct resolution_t resolutions[DE_VIDEO_SIZE_MAX] = {
+static struct resolution_t resolutions[5] = {
     {640,   360,   "DE_VIDEO_SIZE_360P"},
     {640,   480,   "DE_VIDEO_SIZE_VGA"},
     {1280,  720,   "DE_VIDEO_SIZE_720P"},
@@ -53,17 +33,20 @@ static struct resolution_t resolutions[DE_VIDEO_SIZE_MAX] = {
 
 class Vo
 {
-
 public:
     Vo();
     ~Vo();
-    static int demo_play_func(struct ak_vdec_frame *frame);
-    static int set_obj_pos(int decoder, int max_width, int max_height);
-    static void decode_stream(int handle_id, unsigned char *data, int read_len);
+    int demo_play_func(struct ak_vdec_frame *frame);
+    int set_obj_pos(int decoder, int max_width, int max_height);
+    void decode_stream(int handle_id, unsigned char *data, int read_len);
 private:
     void set_param();
     int init();
 public:
+    enum {
+        MAX_DE_NUM = 4,
+        DE_VIDEO_SIZE_MAX = 5
+    };
     DataBuffer dbf;
 
     int decoder_num;     //"解码的数�?：[1-4]"
@@ -78,9 +61,9 @@ public:
     int refresh_record_flag;                    //flag to refresh
     //int handle_id[MAX_DE_NUM];  //vdec handle id
     ak_mutex_t refresh_flag_lock;
-    struct ak_layer_pos  obj_pos[MAX_DE_NUM];              //store the pos
-
+    struct ak_layer_pos obj_pos[MAX_DE_NUM];              //store the pos
 };
+
 
 
 

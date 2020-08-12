@@ -1,13 +1,14 @@
 #ifndef VDEC_H264_H
-#define VDEC_H265_H
+#define VDEC_H264_H
 #include "xmu_vo.h"
 #include "BaseThread.h"
 #include "DataBuff.h"
+#include "xmu_vi.h"
 
 class Vdech264 :public BaseThread
 {
 public:
-	Vdech264(Vo& v);
+	Vdech264(Vo* v);
 	~Vdech264();
 	void run();
 	void start();
@@ -18,7 +19,7 @@ public:
 	//static int refresh_flag = 0;
 	//static int refresh_record_flag = 0;
 private:
-	Vo vo;
+	Vo *vo;
 	int handle_id;
 };
 
@@ -26,14 +27,18 @@ private:
 class VdecSend :public BaseThread
 {
 public:
-	VdecSend(Vo& v, int handle_id);
+	VdecSend(Vo* v, int handle_id);
 	~VdecSend();
 	void run();
 	void start();
-private:
 	DataBuffer dbf;
-	Vo vo;
+	Vi *vi;
+private:
+	
+	Vo* vo;
 	int handle_id;
 };
+
+void test_vdech264();
 
 #endif // !VDEC_H264_H

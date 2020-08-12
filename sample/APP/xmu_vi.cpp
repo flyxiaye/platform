@@ -3,7 +3,47 @@
 #include <memory.h>
 #include <iostream>
 
+#ifdef AK_RTOS
+#include "rtthread.h"
+#define THREAD_PRIO 90
+#else
+#define THREAD_PRIO -1
+#endif
 
+#define RECORD_READ_LEN      4096*10 /* read video file buffer length */
+#define DE_VIDEO_SIZE_MAX    6
+/* this is length for parse */
+#define LEN_HINT                512
+#define LEN_OPTION_SHORT        512
+
+/* mipi screen res */
+#define MIPI_SC_WIDTH 1280
+#define MIPI_SC_HEIGHT 800
+
+/* RGB screen res */
+#define RGB_SC_WIDTH  1024
+#define RGB_SC_HEIGHT  600
+
+#define MAX_ENC_NUM   4
+
+
+
+/* resolation define */
+struct resolution_t {
+	unsigned int width;
+	unsigned int height;
+	unsigned char str[20];
+};
+
+/* decoder resolution */
+static struct resolution_t resolutions[DE_VIDEO_SIZE_MAX] = {
+    {640,   360,   "DE_VIDEO_SIZE_360P"},
+    {640,   480,   "DE_VIDEO_SIZE_VGA"},
+    {1280,  720,   "DE_VIDEO_SIZE_720P"},
+    {960,  1080,   "DE_VIDEO_SIZE_960"},
+    {1920,	1080,  "DE_VIDEO_SIZE_1080P"},
+    {2560,  1920,  "DE_VIDEO_SIZE_1920P"}
+};
 
 Vi::Vi()
 {
@@ -28,8 +68,8 @@ void Vi::set_param()
 	// main_res_id = 4;        //主通道分辨率index[0 - 4]
 	// sub_res_id = 0;         //次通道分辨率index[0 - 4]
     pc_prog_name = NULL;                      //demo名称
-    type         = (char *)"jpeg";                      //get the type input
-    main_res       = 4;
+    type         = (char *)"h264";                      //get the type input
+    main_res       = 1;
     sub_res        = 0;
     // static char *cfg = "/etc/jffs2/isp_pr2000_dvp.conf";
     chn_index = 0;
@@ -94,8 +134,8 @@ int Vi::init()
     int height = resolutions[main_res].height;
     int subwidth = resolutions[sub_res].width;;
     int subheight = resolutions[sub_res].height;
-    int handle_id = -1;
-    ak_pthread_t venc_stream_th;
+    // int handle_id = -1;
+    // ak_pthread_t venc_stream_th;
 
     /* step 1: open video input device */
     ret = ak_vi_open(VIDEO_DEV0);
@@ -114,7 +154,7 @@ int Vi::init()
         ak_print_error_ex(MODULE_ID_VI, "vi device load cfg [%s] failed!\n", isp_path);	
         return AK_FAILED;
     }
-
+    
     /* 
      * step 3: get sensor support max resolution
      */
@@ -192,6 +232,7 @@ int Vi::init()
     /* 
      * step 6: start capture frames
      */
+    //TODO: error
     ret = ak_vi_enable_dev(VIDEO_DEV0);
     if (ret)
     {
@@ -199,6 +240,7 @@ int Vi::init()
         ak_vi_close(VIDEO_DEV0);
         return AK_FAILED;
     }
+    // return AK_SUCCESS;
     /* 
      * step 7: enable vi main channel 
      */
@@ -220,7 +262,7 @@ int Vi::init()
         ak_vi_close(VIDEO_DEV0);
         return AK_FAILED;
     }
-
+    // return AK_SUCCESS;
     /* open venc */
     struct venc_param ve_param;
 
@@ -235,7 +277,7 @@ int Vi::init()
         ve_param.height = subheight;           //resolution height
     }
 
-    ve_param.fps    = 20;               //fps set
+    ve_param.fps    = 30;               //fps set
     ve_param.goplen = 50;               //gop set
     ve_param.target_kbps = 800;         //k bps
     ve_param.max_kbps    = 1024;        //max kbps
@@ -318,7 +360,7 @@ void Vi::run(void)
             }
             else
             {
-                ak_print_normal(MODULE_ID_VENC, "encode success\n");
+                ak_print_normal(MODULE_ID_VENC, "encode success, len is %d\n", stream->len);
                 dbf.rb_write(stream->data, stream->len);
                 ak_venc_release_stream(enc_pair.venc_handle, stream);
             }

@@ -53,7 +53,7 @@ void test3(void)	//多线程编码
 	struct video_input_frame frame;
 	enc_pair_set_source(&frame);
 	venc_start(); 	//线程启动
-	// vdec_start();
+	vdec_start();
 	while (1)
 	{
 		ret = vi_get_one_frame(&frame, sizeof(frame));

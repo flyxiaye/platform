@@ -1,11 +1,33 @@
 #include "xmu_vo.h"
 #include <string.h>
 
+#ifdef AK_RTOS
+#include "rtthread.h"
+#define THREAD_PRIO 90
+#else
+#define THREAD_PRIO -1
+#endif
 
-Vo::Vo(/* args */)
+#define RECORD_READ_LEN      1024*100 /* read video file buffer length */
+
+/* this is length for parse */
+#define LEN_HINT                512
+#define LEN_OPTION_SHORT        512
+
+/* mipi screen res */
+#define MIPI_SC_WIDTH 1280
+#define MIPI_SC_HEIGHT 800
+
+/* RGB screen res */
+#define RGB_SC_WIDTH  1024
+#define RGB_SC_HEIGHT  600
+
+
+Vo::Vo()
 {
 	set_param();
 	init();
+    ak_thread_mutex_init(&refresh_flag_lock, NULL);
 }
 
 Vo::~Vo()
@@ -19,14 +41,13 @@ Vo::~Vo()
 void Vo::set_param()
 {
     decoder_num = 1;     //"解码的数�?：[1-4]"
-    type = "h264";   //"解码数据格式 val：h264 h265 jpeg"
-    res = 3;  //"码流分辨率，0 - 640*360, 1 - 640*480, 2 - 1280*720, 3 - 1920*1080, 4 - 2560*1920
+    type = (char *)"h264";   //"解码数据格式 val：h264 h265 jpeg"
+    res = 1;  //"码流分辨率，0 - 640*360, 1 - 640*480, 2 - 1280*720, 3 - 1920*1080, 4 - 2560*1920
     pc_prog_name = NULL;                      //demo名称
-    screen         = 0;                         //mipi屏幕
+    screen         = 1;                         //mipi屏幕
     refresh_flag   = 0;                         //flag to refresh
     refresh_record_flag = 0;                    //flag to refresh
     // handle_id[MAX_DE_NUM] = { -1, -1, -1, -1};  //vdec handle id
-
 }
 
 int Vo::init()
@@ -82,7 +103,7 @@ int Vo::init()
     if(ret != 0)
     {
         ak_print_error_ex(MODULE_ID_VDEC, "ak_vo_open failed![%d]\n", ret);
-        return ret;
+        return AK_FAILED;
     }
 
     /* create the video layer */
@@ -103,8 +124,6 @@ int Vo::init()
     /* set the obj pos in layer */
     if (set_obj_pos(decoder_num, dst_width, dst_height))
         return AK_FAILED;
-
-	ak_thread_mutex_init(&refresh_flag_lock, NULL);
 }
 
 
@@ -166,7 +185,7 @@ void Vo::decode_stream(int handle_id, unsigned char *data, int read_len)
     while (read_len > 0)
     {
         /* send stream to decode */
-        ret = ak_vdec_send_stream(handle_id, &data[send_len], read_len, 1, &dec_len);
+        ret = ak_vdec_send_stream(handle_id, &data[send_len], read_len, NONBLOCK, &dec_len);
         if (ret !=  0)
         {
             ak_print_error_ex(MODULE_ID_VDEC, "write video data failed!\n");
