@@ -8,7 +8,7 @@ extern "C" {
 class DataBuffer
 {
 public:
-	DataBuffer(int module_id=0, int size = 10240);
+	DataBuffer(int module_id=0, int size = 100 * 1024);
 	~DataBuffer();
 	int rb_write(unsigned char * src, int write_len);
 	int rb_read(unsigned char * dst, int read_len, int* result);

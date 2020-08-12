@@ -51,13 +51,12 @@ static struct resolution_t resolutions[DE_VIDEO_SIZE_MAX] = {
     {2560,  1920,  "DE_VIDEO_SIZE_1920P"}
 };
 
-class Vo :public BaseThread
+class Vo
 {
 
 public:
-    Vo(/* args */);
+    Vo();
     ~Vo();
-    void start();
     static int demo_play_func(struct ak_vdec_frame *frame);
     static int set_obj_pos(int decoder, int max_width, int max_height);
     static void decode_stream(int handle_id, unsigned char *data, int read_len);
@@ -72,46 +71,14 @@ public:
     int res;
 
     char *pc_prog_name;                      //demo名称
-    char *file;                              //file name
+    //char *file;                              //file name
     int screen;                         //mipi屏幕
+	//多线程同步
     int refresh_flag;                         //flag to refresh
     int refresh_record_flag;                    //flag to refresh
-    int handle_id[MAX_DE_NUM];  //vdec handle id
+    //int handle_id[MAX_DE_NUM];  //vdec handle id
     ak_mutex_t refresh_flag_lock;
     struct ak_layer_pos  obj_pos[MAX_DE_NUM];              //store the pos
-public:
-    class Jpeg :public BaseThread
-    {
-    private:
-        int vdec_handle_id;
-    public:
-        Jpeg(/* args */);
-        ~Jpeg();
-        void run();
-        void start();
-    };
-
-    class H264_1 :public BaseThread
-    {
-    private:
-        int vdec_handle_id;
-    public:
-        H264_1(/* args */);
-        ~H264_1();
-        void run();
-        void start();
-    };
-
-    class H264_2 :public BaseThread
-    {
-    private:
-        int vdec_handle_id;
-    public:
-        H264_2(/* args */);
-        ~H264_2();
-        void run();
-        void start();
-    };
 
 };
 

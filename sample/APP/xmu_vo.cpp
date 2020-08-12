@@ -4,17 +4,12 @@
 
 Vo::Vo(/* args */)
 {
+	set_param();
+	init();
 }
 
 Vo::~Vo()
 {
-    int i = 0;
-    while (i < MAX_DE_NUM && handle_id[i] != -1)
-    {
-        ak_vdec_close(handle_id[i]);
-        i++;
-    }
-
     /* destroy the layer and close vo */
     ak_vo_destroy_layer(AK_VO_LAYER_VIDEO_1);
     ak_vo_close(DEV_NUM);
@@ -24,16 +19,13 @@ Vo::~Vo()
 void Vo::set_param()
 {
     decoder_num = 1;     //"解码的数�?：[1-4]"
-    type = "jpeg";   //"解码数据格式 val：h264 h265 jpeg"
+    type = "h264";   //"解码数据格式 val：h264 h265 jpeg"
     res = 3;  //"码流分辨率，0 - 640*360, 1 - 640*480, 2 - 1280*720, 3 - 1920*1080, 4 - 2560*1920
     pc_prog_name = NULL;                      //demo名称
-    file  = NULL;                              //file name
     screen         = 0;                         //mipi屏幕
     refresh_flag   = 0;                         //flag to refresh
     refresh_record_flag = 0;                    //flag to refresh
     // handle_id[MAX_DE_NUM] = { -1, -1, -1, -1};  //vdec handle id
-    ak_mutex_t refresh_flag_lock;
-    struct ak_layer_pos  obj_pos[MAX_DE_NUM];              //store the pos
 
 }
 
@@ -112,93 +104,9 @@ int Vo::init()
     if (set_obj_pos(decoder_num, dst_width, dst_height))
         return AK_FAILED;
 
-    ak_thread_mutex_init(&refresh_flag_lock, NULL);
-
-
+	ak_thread_mutex_init(&refresh_flag_lock, NULL);
 }
 
-void Vo::start(){
-    enum ak_vdec_input_type intype = AK_CODEC_H264;
-    enum ak_vdec_output_type outtype = AK_YUV420SP;
-    int mode = 0;
-
-    if (type == NULL)
-    {
-        ak_print_error_ex(MODULE_ID_VDEC, "please input the type\n");
-        /* print the hint and notice */
-        return;
-    }
-
-    /* get the type for input */
-    if(!strcmp(type,"h264"))
-    {
-        /* h264 */
-        ak_print_normal(MODULE_ID_VDEC, "h264 success\n");
-        intype = AK_CODEC_H264;
-    }
-    else if(!strcmp(type,"h265"))
-    {   
-        /* h265 */
-        ak_print_normal(MODULE_ID_VDEC, "h265 success\n");
-        intype = AK_CODEC_H265;
-    }
-    else if(!strcmp(type,"jpeg"))
-    {
-        /* jpeg */
-        intype = AK_CODEC_MJPEG;
-        outtype = AK_YUV420SP;
-        mode = 1;
-    }
-    else
-        ak_print_normal_ex(MODULE_ID_VDEC, "unsupport video decode input type [%s] \n", type);
-
-    /* output vdec data set */
-    if(intype != AK_CODEC_MJPEG)
-        outtype = AK_TILE_YUV;
-
-    /* open vdec */
-    struct ak_vdec_param param;
-    param.vdec_type = intype;
-    param.sc_height = resolutions[res].height;         //vdec height res set
-    param.sc_width = resolutions[res].width;          //vdec width res set
-    param.output_type = outtype;
-
-    /* open the vdec */
-    int ret = ak_vdec_open(&param, &handle_id[i]);
-    if(ret != 0)
-    {
-        ak_print_error_ex(MODULE_ID_VDEC, "ak_vdec_open failed!\n");
-
-        /* destroy the layer */
-        return;
-    }
-    
-    ak_thread_mutex_lock(&refresh_flag_lock);
-    /* refresh flag to record */
-    refresh_record_flag |= (1 << handle_id[i]);
-    ak_thread_mutex_unlock(&refresh_flag_lock);
-
-    /* mode == 1 means the solo frame decode */
-    if (mode)
-    {   
-        /* if decode the jpeg data */
-        ak_pthread_t jpeg_stream_th;
-        ak_thread_create(&jpeg_stream_th, vdec_solo_frame, &handle_id[i], ANYKA_THREAD_MIN_STACK_SIZE, THREAD_PRIO);
-    }
-    else
-    {
-        /* h264 or h265 decode, there is two thread */
-        /* get frame thread */
-        ak_pthread_t tid_stream_th;
-        ak_thread_create(&tid_stream_th, vdec_get_frame_th, &handle_id[i], ANYKA_THREAD_MIN_STACK_SIZE, THREAD_PRIO);
-
-        /* send stream thread */
-        ak_pthread_t pid;
-        ak_thread_create(&pid, vdec_send_decode_th, &handle_id[i], ANYKA_THREAD_MIN_STACK_SIZE, THREAD_PRIO);	
-    }
-    i++;
-
-}
 
 /* this func is used to set the obj pos in layer */
 int Vo::set_obj_pos(int decoder, int max_width, int max_height)
@@ -337,213 +245,3 @@ int Vo::demo_play_func(struct ak_vdec_frame *frame)
     return 0;
 }
 
-void Vo::H264_1::run(void)
-{
-    //send to decode
-    ak_thread_set_name("vdec_demo_test");
-
-    // int *handle_id = (int *)arg;
-    // char *file_name = file;
-
-    /* read video file stream and send to decode, */
-    int read_len = 0;
-    int total_len = 0;
-    unsigned char *data = (unsigned char *)ak_mem_alloc(MODULE_ID_VDEC, RECORD_READ_LEN);
-
-    /* loop for sending data to decode */
-    do
-    {
-        /* read the record file stream */
-        memset(data, 0x00, RECORD_READ_LEN);
-        read_len = fread(data, sizeof(char), RECORD_READ_LEN, fp);
-        
-        /* get the data and send to decoder */
-        if(read_len > 0)
-        {
-            total_len += read_len;
-            /* play loop */
-            decode_stream(*handle_id, data, read_len);
-            ak_sleep_ms(10);
-        }
-        else if(0 == read_len)
-        {
-            /* read to the end of file */
-            ak_print_normal_ex(MODULE_ID_VDEC, "\n\tread to the end of file\n");
-            break;
-        }
-        else 
-        {
-            /* if the data is wrong */
-            ak_print_error_ex(MODULE_ID_VDEC, "\nread file error\n");
-            break;
-        }
-    }while(1);
-
-    /* if finish, notice the decoder for data sending finish */
-    ak_vdec_end_stream(*handle_id);
-    if (data != NULL)
-        ak_mem_free(data);
-#ifndef AK_RTOS
-    posix_fadvise(fileno(fp), 0, total_len, POSIX_FADV_DONTNEED);
-#endif
-    fclose(fp);
-
-    ak_print_normal_ex(MODULE_ID_VDEC, "send stream th exit\n");
-    return NULL;
-}
-
-void Vo::Jpeg::run(void)
-{
-    int ret = -1;
-
-    /* read video file stream and send to decode, */
-    int read_len = 0;
-    int total_len = 0;
-    unsigned char *data = NULL;
-
-    /* a loop for read all the jpeg file */
-    data = (unsigned char *)ak_mem_alloc(MODULE_ID_VDEC, file_size);
-
-    /* read the record file stream */
-    memset(data, 0x00, sizeof(data));
-    read_len = fread(data, sizeof(char), file_size, fp);
-
-    /* send the data to decode */
-    ak_print_normal(MODULE_ID_VDEC, "size is [%d] \n", read_len);
-    if(read_len > 0)
-    {
-        total_len += read_len;
-        /* play loop */
-        decode_stream(*handle_id, data, read_len);
-        ak_sleep_ms(10);
-    }
-    else if(0 == read_len)
-    {
-        /* read to the end of file */
-        ak_print_normal_ex(MODULE_ID_VDEC, "\n\tread to the end of file\n");
-        goto file_failed;
-    }
-    else 
-    {
-        /* error is not support */
-        ak_print_error_ex(MODULE_ID_VDEC, "read file error\n");
-        goto file_failed;
-    }
-
-    /* inform that sending data is over */
-    ak_vdec_end_stream(*handle_id);
-
-    struct ak_vdec_frame frame;
-    /* need to get the frame for a while */
-    while (1)
-    {
-        /* get the frame */
-        ret = ak_vdec_get_frame(*handle_id, &frame);
-        if(ret == 0)
-        {
-            /* set frame status */
-            demo_play_func(&frame);
-
-            /* relase the frame and push back to decoder */
-            ak_vdec_release_frame(*handle_id, &frame);
-            break;
-        }
-        else
-        {
-            ak_print_normal_ex(MODULE_ID_VDEC, "id [%d] get frame failed! waiting 5 ms!\n", *handle_id);
-            ak_sleep_ms(5);
-        }
-    }
-
-
-    if (NULL != data)
-        ak_mem_free(data);
-
-        
-    
-
-
-    ak_print_normal_ex(MODULE_ID_VDEC, "JPEG_sending is done, decoder [%d] send jpeg th exit\n", *handle_id);
-    // decoder_num--;
-    // ak_thread_mutex_lock(&refresh_flag_lock);
-    // //clear_bit
-    // refresh_record_flag &= ~(1 << (*handle_id));
-    // refresh_flag &= ~(1 << (*handle_id));
-    // ak_thread_mutex_unlock(&refresh_flag_lock);
-    // return NULL;
-}
-
-void Vo::H264_2::run(void)
-{
-    ak_thread_set_name("vdec_get_frame");
-    int *id =(int *)arg;
-    int ret = -1;
-    int status = 0;
-
-    /* a loop for getting the frame and display */
-    do{
-        /* get frame */
-        struct ak_vdec_frame frame;
-        ret = ak_vdec_get_frame(*id, &frame);
-
-        if(ret == 0)
-        {
-            /* invoke the callback function to process the frame*/
-            demo_play_func(&frame);
-
-            /* relase the frame and push back to decoder */
-            ak_vdec_release_frame(*id, &frame);
-        }
-        else
-        {
-            /* get frame failed , sleep 10ms before next cycle*/
-            ak_print_normal_ex(MODULE_ID_VDEC, "id [%d] get frame failed! waiting for 10 ms\n", *id);
-            ak_sleep_ms(10);
-        }
-
-        /* check the status finished */
-        ak_vdec_get_decode_finish(*id, &status);
-        /* true means finished */
-        if (status)
-        {
-            decoder_num--;  //that means current decoder is finished
-            ak_thread_mutex_lock(&refresh_flag_lock);
-            //clear_bit
-            refresh_record_flag &= ~(1 << *id);
-            refresh_flag &= ~(1 << *id);
-            ak_thread_mutex_unlock(&refresh_flag_lock);
-            ak_print_normal(MODULE_ID_VDEC, "id is [%d] status [%d]\n", *id, status);
-            return NULL;
-        }
-    }while(1);
-}
-
-static void * callback_jpeg(void *arg)
-{
-    ((Vo::Jpeg*)arg)->run();
-}
-
-static void * callback_h264_1(void *arg)
-{
-    ((Vo::H264_1*)arg)->run();
-}
-
-static void * callback_h264_2(void *arg)
-{
-    ((Vo::H264_2*)arg)->run();
-}
-
-void Vo::Jpeg::start()
-{
-    BaseThread::start(callback_jpeg);
-}
-
-void Vo::H264_1::start()
-{
-    BaseThread::start(callback_h264_1);
-}
-
-void Vo::H264_2::start()
-{
-    BaseThread::start(callback_h264_2);
-}
