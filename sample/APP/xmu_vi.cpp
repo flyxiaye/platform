@@ -277,9 +277,11 @@ int Vi::init()
         ve_param.height = subheight;           //resolution height
     }
 
-    ve_param.fps    = 30;               //fps set
+    ve_param.fps    = 25;               //fps set
     ve_param.goplen = 50;               //gop set
+    // ve_param.target_kbps = 800;         //k bps
     ve_param.target_kbps = 800;         //k bps
+    // ve_param.max_kbps    = 1024;        //max kbps
     ve_param.max_kbps    = 1024;        //max kbps
     ve_param.br_mode     = BR_MODE_CBR; //br mode
     ve_param.minqp       = 25;          //qp set
@@ -341,17 +343,18 @@ void Vi::run(void)
     struct video_input_frame frame;
     memset(&frame, 0x00, sizeof(frame));
     ak_print_normal(MODULE_ID_VI, "capture start\n");
-
+    struct video_stream *stream = (struct video_stream *)ak_mem_alloc(MODULE_ID_VENC, sizeof(struct video_stream));
     /* frame num cal */
     while(1)
     {
+        ak_get_ostime(&tim1);
         memset(&frame, 0x00, sizeof(frame));
         VI_CHN chn_id = (chn_index == 0) ?  VIDEO_CHN0 : VIDEO_CHN1;
         int ret = ak_vi_get_frame(chn_id, &frame);
         if (!ret) 
         {
             /* send it to encode */
-            struct video_stream *stream = (struct video_stream *)ak_mem_alloc(MODULE_ID_VENC, sizeof(struct video_stream));
+            
             ret = ak_venc_encode_frame(enc_pair.venc_handle, frame.vi_frame.data, frame.vi_frame.len, frame.mdinfo, stream);
             if (ret)
             {
@@ -360,12 +363,12 @@ void Vi::run(void)
             }
             else
             {
-                ak_print_normal(MODULE_ID_VENC, "encode success, len is %d\n", stream->len);
+                // ak_print_normal(MODULE_ID_VENC, "encode success, len is %d\n", stream->len);
                 dbf.rb_write(stream->data, stream->len);
                 ak_venc_release_stream(enc_pair.venc_handle, stream);
             }
 
-            ak_mem_free(stream);
+            
             ak_vi_release_frame(chn_id, &frame);
         }
         else
@@ -377,8 +380,13 @@ void Vi::run(void)
             ak_print_normal_ex(MODULE_ID_VI, "get frame failed!\n");
             ak_sleep_ms(10);
         }
+        ak_get_ostime(&tim2);
+        long tim = ak_diff_ms_time(&tim2, &tim1);
+        // ak_print_normal(MODULE_ID_VI, "vi time: %ld\n", tim);
 
-    }}
+    }
+    ak_mem_free(stream);
+}
 
 static void * callback(void * arg)
 {

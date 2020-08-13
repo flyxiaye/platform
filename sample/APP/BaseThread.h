@@ -19,12 +19,13 @@ public:
 	void post();
 	void stop();
 	// virtual void run(void * arg) { std::cout << "BaseThread\n"; };
-
+protected:
+	ak_sem_t sem;
 private:
 	ak_pthread_t thread_id;
 	int stack_size;
 	int priority;
-	ak_sem_t sem;
+	
 };
 
 void test_thread();

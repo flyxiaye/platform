@@ -47,7 +47,7 @@ public:
         MAX_DE_NUM = 4,
         DE_VIDEO_SIZE_MAX = 5
     };
-    DataBuffer dbf;
+    // DataBuffer dbf;
 
     int decoder_num;     //"解码的数�?：[1-4]"
     char *type;   //"解码数据格式 val：h264 h265 jpeg"

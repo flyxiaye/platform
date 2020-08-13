@@ -1,10 +1,15 @@
 #include "vdec_h264.h"
 #include <string.h>
+extern "C"{
+#include "ak_common.h"
+}
 
 #define RECORD_READ_LEN      1024*100 /* read video file buffer length */
 
 Vdech264::Vdech264(Vo* v)
 {
+	ak_get_ostime(&tim1);
+	ak_get_ostime(&tim2);
 	vo = v;
 	// ak_print_normal(MODULE_ID_VDEC, "vo attr %d\n", v->screen);
 	int ret;
@@ -82,15 +87,20 @@ void Vdech264::run()
 		if (ret == 0)
 		{
 			/* invoke the callback function to process the frame*/
+			
+			ak_get_ostime(&tim1);
+			// long tim = ak_diff_ms_time(&tim1, &tim2);
 			vo->demo_play_func(&frame);
-
+			ak_get_ostime(&tim2);
+			long tim = ak_diff_ms_time(&tim2, &tim1);
+			// ak_print_normal(MODULE_ID_VO, "vo time: %ld\n", tim);
 			/* relase the frame and push back to decoder */
 			ak_vdec_release_frame(id, &frame);
 		}
 		else
 		{
 			/* get frame failed , sleep 10ms before next cycle*/
-			ak_print_normal_ex(MODULE_ID_VDEC, "id [%d] get frame failed! waiting for 10 ms\n", id);
+			// ak_print_normal_ex(MODULE_ID_VDEC, "id [%d] get frame failed! waiting for 10 ms\n", id);
 			ak_sleep_ms(10);
 		}
 
@@ -141,15 +151,16 @@ void VdecSend::run()
 	int read_len = 0;
 	int total_len = 0;
 	unsigned char* data = (unsigned char*)ak_mem_alloc(MODULE_ID_VDEC, RECORD_READ_LEN);
-
+	memset(data, 0x00, RECORD_READ_LEN);
 	/* loop for sending data to decode */
 	do
 	{
+		ak_get_ostime(&tim1);
 		/* read the record file stream */
-		memset(data, 0x00, RECORD_READ_LEN);
-		//read_len = fread(data, sizeof(char), RECORD_READ_LEN, fp);
-		// dbf.rb_read(data, RECORD_READ_LEN, &read_len);
-		vi->dbf.rb_read(data, RECORD_READ_LEN, &read_len);
+		
+		dbf.rb_read(data, RECORD_READ_LEN, &read_len);
+		// vi->dbf.rb_read(data, RECORD_READ_LEN, &read_len);
+		// ak_print_normal(MODULE_ID_VDEC, "read len: %d\n", read_len);
 		/* get the data and send to decoder */
 		if (read_len > 0)
 		{
@@ -157,19 +168,12 @@ void VdecSend::run()
 			/* play loop */
 			vo->decode_stream(handle_id, data, read_len);
 			ak_sleep_ms(10);
+		} else {
+			ak_sleep_ms(10);
 		}
-		//else if (0 == read_len)
-		//{
-		//	/* read to the end of file */
-		//	ak_print_normal_ex(MODULE_ID_VDEC, "\n\tread to the end of file\n");
-		//	break;
-		//}
-		//else
-		//{
-		//	/* if the data is wrong */
-		//	ak_print_error_ex(MODULE_ID_VDEC, "\nread file error\n");
-		//	break;
-		//}
+		ak_get_ostime(&tim2);
+		long tim = ak_diff_ms_time(&tim2, &tim1);
+		// ak_print_normal(MODULE_ID_VDEC, "vdec time: %ld\n", tim);
 	} while (1);
 
 	/* if finish, notice the decoder for data sending finish */

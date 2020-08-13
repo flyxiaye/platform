@@ -47,6 +47,7 @@ private:
     int chn_index;
 
     struct venc_pair enc_pair;
+    ak_timeval tim1, tim2;
 };
 
 

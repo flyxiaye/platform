@@ -208,7 +208,7 @@ int Vo::demo_play_func(struct ak_vdec_frame *frame)
     int height = obj_pos[frame->id].height;
 
     /* obj to add to layer */
-    struct ak_vo_obj    obj;
+    struct ak_vo_obj obj;
     memset(&obj, 0x00, sizeof(struct ak_vo_obj));
     if (frame->data_type == AK_TILE_YUV)
     {

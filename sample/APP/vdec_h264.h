@@ -4,6 +4,9 @@
 #include "BaseThread.h"
 #include "DataBuff.h"
 #include "xmu_vi.h"
+extern "C"{
+#include "ak_common.h"
+}
 
 class Vdech264 :public BaseThread
 {
@@ -21,6 +24,7 @@ public:
 private:
 	Vo *vo;
 	int handle_id;
+	ak_timeval tim1, tim2;
 };
 
 
@@ -37,6 +41,7 @@ private:
 	
 	Vo* vo;
 	int handle_id;
+	ak_timeval tim1, tim2;
 };
 
 void test_vdech264();
