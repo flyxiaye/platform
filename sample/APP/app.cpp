@@ -6,6 +6,9 @@
 #include "vdec_h264.h"
 #include "MTcpclient.h"
 #include "MTcpServer.h"
+#include "xmu_ai.h"
+#include "xmu_ao.h"
+#include "adec.h"
 
 extern "C"{
 #include "ak_common.h"
@@ -15,6 +18,9 @@ void test_tcp();
 void test_tcp_vivo();
 void test_send();
 void test_recv();
+void test_aenc();
+void test_adec();
+void test_ai_ao();
 
 using namespace std;
 
@@ -32,7 +38,7 @@ int main(int argc, char **argv)
     // test_vdech264();
     // test_vi_vo();
     // test_tcp();
-    test_tcp_vivo();
+    // test_tcp_vivo();
     // if (!strcmp(argv[1], "server"))
     //     test_recv();
     // else if (!strcmp(argv[1], "client"))
@@ -40,7 +46,9 @@ int main(int argc, char **argv)
     // Vi vi;
     // vi.start();
     // while (1);
-    
+    // test_aenc();
+    // test_adec();
+    test_ai_ao();
 }
 
 void test_vi_vo()
@@ -123,4 +131,37 @@ void test_recv()
     v1.start();
     v2.start();
     while(1);
+}
+
+void test_aenc()
+{
+    Ai ai;
+    ai.start();
+    while(1);
+}
+
+void test_adec()
+{
+    Ao ao;
+    Adec adec(&ao);
+    AdecSend adec_send(&adec);
+    adec.start();
+    adec_send.start();
+    while(1);
+}
+
+void test_ai_ao()
+{
+    Ai ai;
+    
+    Ao ao;
+    Adec adec(&ao);
+    AdecSend adec_send(&adec);
+    ai.start();
+    adec.start();
+    adec_send.start();
+    while(1)
+    {
+        adec_send.dbf.rb_write(ai.dbf, 4096);
+    }
 }

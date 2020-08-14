@@ -15,7 +15,7 @@ BaseThread::BaseThread(int stack_size, int priority) {
 BaseThread::~BaseThread()
 {
 	// std::cout << "destroy thread\n";
-	// ak_thread_join(thread_id);
+	ak_thread_join(thread_id);
 	ak_thread_sem_destroy(&sem);
 }
 
