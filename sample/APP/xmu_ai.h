@@ -32,7 +32,7 @@ public:
     ~Ai();
     void start();
     void run();
-    DataBuffer dbf;
+    DataBuffer *dbf;
 };
 
 #endif

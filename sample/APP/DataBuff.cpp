@@ -19,7 +19,7 @@ DataBuffer::DataBuffer(int module_id, int size)
 	buffer_head = 0;
 	buffer_tail = 0;
 	buffer_left = buffer_size;
-	buffer_ad = (unsigned char *)ak_mem_alloc(MODULE_ID_MEMORY, buffer_size);
+	buffer_ad = (unsigned char *)ak_mem_alloc(module_id, buffer_size);
 #else
 	buffer_size = size;
 	int ret = ak_mem_rb_init(&buffer_id, module_id, buffer_size);

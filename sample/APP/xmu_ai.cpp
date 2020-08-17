@@ -1,16 +1,18 @@
 #include "xmu_ai.h"
-
-#define LEN_HINT         512
-#define LEN_OPTION_SHORT 512
+#include "xmu_common.h"
 
 Ai::Ai(/* args */)
 {
+    // BaseThread(50*1024, -1);
     set_param();
     init();
+    dbf = new DataBuffer(MODULE_ID_MEMORY, aenc_mem);
+    // dbf(MODULE_ID_AENC, aenc_mem);
 }
 
 Ai::~Ai()
 {
+    delete dbf;
 }
 
 void Ai::set_param()
@@ -221,7 +223,9 @@ void Ai::run()
             if (stream.data && stream.len)
             {
                 // fwrite(stream.data, stream.len, 1, fp);
-                dbf.rb_write(stream.data, stream.len);
+                ret = dbf->rb_write(stream.data, stream.len);
+                // if (ret == AK_FAILED)
+                //     ak_print_error_ex(MODULE_ID_ADEC, "write failed\n");
                 print_playing_dot();
             }
             else

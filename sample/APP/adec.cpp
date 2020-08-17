@@ -3,6 +3,7 @@
 #include <errno.h>
 #include <string.h>
 #include <ctype.h>
+#include "xmu_common.h"
 
 #define RECORD_READ_LEN 4096
 
@@ -86,6 +87,7 @@ AdecSend::AdecSend(Adec *ad)
     adec = ad;
     adec_handle_id = ad->adec_handle_id;
     send_frame_end = 0;
+    dbf = DataBuffer(MODULE_ID_ADEC, adec_mem);
 }
 
 AdecSend::~AdecSend()

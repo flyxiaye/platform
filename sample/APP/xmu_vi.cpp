@@ -2,6 +2,7 @@
 #include <memory>
 #include <memory.h>
 #include <iostream>
+#include "xmu_common.h"
 
 #ifdef AK_RTOS
 #include "rtthread.h"
@@ -49,6 +50,7 @@ Vi::Vi()
 {
     this->set_param();
     this->init();
+    // dbf = DataBuffer(MODULE_ID_VENC, venc_mem);
 }
 
 Vi::~Vi()

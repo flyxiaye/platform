@@ -16,15 +16,11 @@ public:
 	void run();
 	void start();
 	int get_handle_id() { return handle_id; }
-	//static ak_mutex_t refresh_flag_lock;
-	//static int handle_id[MAX_DE_NUM];
-	//static int handle_num = 0;
-	//static int refresh_flag = 0;
-	//static int refresh_record_flag = 0;
+	int handle_id;
 private:
 	Vo *vo;
-	int handle_id;
-	ak_timeval tim1, tim2;
+	
+	// ak_timeval tim1, tim2;
 };
 
 
@@ -38,7 +34,6 @@ public:
 	DataBuffer dbf;
 	Vi *vi;
 private:
-	
 	Vo* vo;
 	int handle_id;
 	ak_timeval tim1, tim2;

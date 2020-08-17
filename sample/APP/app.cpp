@@ -182,7 +182,7 @@ void test_ai_ao()
     adec_send.start();
     while(1)
     {
-        adec_send.dbf.rb_write(ai.dbf, 4096);
+        adec_send.dbf.rb_write(*ai.dbf, 4096);
     }
 }
 
@@ -190,8 +190,8 @@ void test_ai_tcp()
 {
     Ai ai;
     MTcpclient client;
-    client.dbf = &ai.dbf;
-    client.start();
+    // client.dbf = &ai.dbf;
+    // client.start();
     ai.start();
     while(1);
 }

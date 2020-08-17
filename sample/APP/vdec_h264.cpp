@@ -8,16 +8,10 @@ extern "C"{
 
 Vdech264::Vdech264(Vo* v)
 {
-	ak_get_ostime(&tim1);
-	ak_get_ostime(&tim2);
 	vo = v;
-	// ak_print_normal(MODULE_ID_VDEC, "vo attr %d\n", v->screen);
 	int ret;
 	enum ak_vdec_input_type intype = AK_CODEC_H264;
 	enum ak_vdec_output_type outtype = AK_YUV420SP;
-	//int mode = 0;
-	//int i = 0;
-	//int ready_open = decoder_num;
 	/* get the type for output */
 	if (vo->type == NULL)
 	{
@@ -87,20 +81,13 @@ void Vdech264::run()
 		if (ret == 0)
 		{
 			/* invoke the callback function to process the frame*/
-			
-			ak_get_ostime(&tim1);
-			// long tim = ak_diff_ms_time(&tim1, &tim2);
 			vo->demo_play_func(&frame);
-			ak_get_ostime(&tim2);
-			long tim = ak_diff_ms_time(&tim2, &tim1);
-			// ak_print_normal(MODULE_ID_VO, "vo time: %ld\n", tim);
 			/* relase the frame and push back to decoder */
 			ak_vdec_release_frame(id, &frame);
 		}
 		else
 		{
 			/* get frame failed , sleep 10ms before next cycle*/
-			// ak_print_normal_ex(MODULE_ID_VDEC, "id [%d] get frame failed! waiting for 10 ms\n", id);
 			ak_sleep_ms(10);
 		}
 
@@ -135,7 +122,7 @@ VdecSend::VdecSend(Vo * v, int handle_id)
 {
 	vo = v;
 	this->handle_id = handle_id;
-	dbf = DataBuffer(MODULE_ID_VDEC);
+	dbf = DataBuffer(MODULE_ID_VDEC, vdec_mem);
 }
 
 
@@ -155,12 +142,9 @@ void VdecSend::run()
 	/* loop for sending data to decode */
 	do
 	{
-		ak_get_ostime(&tim1);
 		/* read the record file stream */
-		
 		dbf.rb_read(data, RECORD_READ_LEN, &read_len);
 		// vi->dbf.rb_read(data, RECORD_READ_LEN, &read_len);
-		// ak_print_normal(MODULE_ID_VDEC, "read len: %d\n", read_len);
 		/* get the data and send to decoder */
 		if (read_len > 0)
 		{
@@ -171,9 +155,6 @@ void VdecSend::run()
 		} else {
 			ak_sleep_ms(10);
 		}
-		ak_get_ostime(&tim2);
-		long tim = ak_diff_ms_time(&tim2, &tim1);
-		// ak_print_normal(MODULE_ID_VDEC, "vdec time: %ld\n", tim);
 	} while (1);
 
 	/* if finish, notice the decoder for data sending finish */
