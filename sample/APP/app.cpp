@@ -21,6 +21,8 @@ void test_recv();
 void test_aenc();
 void test_adec();
 void test_ai_ao();
+void test_ai_tcp();
+void test_ao_tcp();
 
 using namespace std;
 
@@ -48,7 +50,11 @@ int main(int argc, char **argv)
     // while (1);
     // test_aenc();
     // test_adec();
-    test_ai_ao();
+    // test_ai_ao();
+    if (!strcmp(argv[1], "server"))
+        test_ao_tcp();
+    else if (!strcmp(argv[1], "client"))
+        test_ai_tcp();
 }
 
 void test_vi_vo()
@@ -142,9 +148,23 @@ void test_aenc()
 
 void test_adec()
 {
+    char *filename = (char*)"/mnt/test.mp3";
+    FILE *fp;
+    fp = fopen(filename, "rb");
+    if (fp == NULL){
+        printf("open file failed\n");
+        return;
+    }
+    // fseek(fp, 0, SEEK_END);
+    // int len = ftell(fp);
+    // rewind(fp);
+    unsigned char *buff = (unsigned char *)ak_mem_alloc(MODULE_ID_MEMORY, 200*1024);
+    fread(buff, 200*1024, 1, fp);
     Ao ao;
     Adec adec(&ao);
     AdecSend adec_send(&adec);
+    adec_send.dbf.rb_write(buff, 200*1024);
+    ak_print_normal(MODULE_ID_ADEC, "buffer size %d\n", adec_send.dbf.rb_get_buffer_size());
     adec.start();
     adec_send.start();
     while(1);
@@ -164,4 +184,27 @@ void test_ai_ao()
     {
         adec_send.dbf.rb_write(ai.dbf, 4096);
     }
+}
+
+void test_ai_tcp()
+{
+    Ai ai;
+    MTcpclient client;
+    client.dbf = &ai.dbf;
+    client.start();
+    ai.start();
+    while(1);
+}
+
+void test_ao_tcp()
+{
+    Ao ao;
+    Adec adec(&ao);
+    AdecSend adec_send(&adec);
+    MTcpServer server;
+    server.dbf = &adec_send.dbf;
+    server.start();
+    adec_send.start();
+    adec.start();
+    while(1);
 }

@@ -4,8 +4,8 @@
 
 MTcpclient::MTcpclient(/* args */)
 {
-    // ip = (char *)"192.168.1.14";
-    ip = (char *)"127.0.0.1";
+    ip = (char *)"192.168.1.9";
+    // ip = (char *)"127.0.0.1";
     if( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
         printf("create socket error\n");
         return;

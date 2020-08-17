@@ -160,7 +160,7 @@ int DataBuffer::rb_write(DataBuffer &df_src, int write_len)
 int DataBuffer::rb_get_buffer_size()
 {
 #ifdef MYQUE
-	return buffer_size;
+	return buffer_size - buffer_left;
 #else
 	int size;
 	ak_mem_rb_get_data_size(buffer_id, &size);

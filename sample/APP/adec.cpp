@@ -33,7 +33,7 @@ int Adec::init()
     adec_param.adec_data_attr.sample_rate = ao->sample_rate;
 
     /* open adec */
-    int adec_handle_id = -1;
+    // int adec_handle_id = -1;
     if (ak_adec_open(&adec_param, &adec_handle_id))// open
     {
         return AK_FAILED;
@@ -52,7 +52,7 @@ void Adec::run()
         {
             ak_print_error_ex(MODULE_ID_ADEC, "can not get frame=%p,len=%d\n", pcm_frame.data, pcm_frame.len);
             ak_sleep_ms(10);
-            break;
+            // break;
         }
 
         if (pcm_frame.len == 0 || pcm_frame.data == NULL)
@@ -104,11 +104,13 @@ void AdecSend::run()
     {
         /* read the record file stream */
         dbf.rb_read(data, RECORD_READ_LEN, &read_len);
+        // ak_print_normal(MODULE_ID_ADEC, "read len %d\n", read_len);
         if(read_len > 0) 
         {
             total_len += read_len;
             /* play roop */
             ak_adec_send_stream(adec_handle_id, data, read_len, 1);
+            // ak_print_normal(MODULE_ID_ADEC, "read len %d\n", read_len);
             adec->ao->print_playing_dot();            
         } 
         // else if(0 == read_len) 

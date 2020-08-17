@@ -27,8 +27,8 @@ int send_frame_end = 0;
 
 int sample_rate = 8000;
 int channel_num = 1;
-char *play_file = "/mnt/ak_ao_test.pcm";
-int dec_type = AK_AUDIO_TYPE_PCM;
+char *play_file = "/mnt/test.mp3";
+int dec_type = AK_AUDIO_TYPE_MP3;
 
 /*     ***********************************
     ***********************************
