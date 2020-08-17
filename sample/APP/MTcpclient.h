@@ -13,11 +13,13 @@ class MTcpclient :public BaseThread
 {
 private:
     int sockfd, n;
-    unsigned char recvline[4096], sendline[4096];
-    struct sockaddr_in servaddr;
+    unsigned char *recvline, *sendline;
+    struct sockaddr_in *servaddr;
     char *ip;
 public:
     MTcpclient(/* args */);
+    MTcpclient(const char * ip);
+    MTcpclient(const char * ip, int port);
     ~MTcpclient();
     void start();
     void run();

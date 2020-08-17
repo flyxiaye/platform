@@ -31,7 +31,7 @@ public:
 	~VdecSend();
 	void run();
 	void start();
-	DataBuffer dbf;
+	DataBuffer * dbf;
 	Vi *vi;
 private:
 	Vo* vo;

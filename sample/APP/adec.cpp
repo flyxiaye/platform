@@ -87,11 +87,12 @@ AdecSend::AdecSend(Adec *ad)
     adec = ad;
     adec_handle_id = ad->adec_handle_id;
     send_frame_end = 0;
-    dbf = DataBuffer(MODULE_ID_ADEC, adec_mem);
+    dbf = new DataBuffer(MODULE_ID_ADEC, adec_mem);
 }
 
 AdecSend::~AdecSend()
 {
+    delete dbf;
 }
 
 void AdecSend::run()
@@ -105,7 +106,7 @@ void AdecSend::run()
     while (1)
     {
         /* read the record file stream */
-        dbf.rb_read(data, RECORD_READ_LEN, &read_len);
+        dbf->rb_read(data, RECORD_READ_LEN, &read_len);
         // ak_print_normal(MODULE_ID_ADEC, "read len %d\n", read_len);
         if(read_len > 0) 
         {

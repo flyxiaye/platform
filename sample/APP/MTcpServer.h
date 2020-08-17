@@ -11,16 +11,16 @@
 class MTcpServer :public BaseThread
 {
 private:
-    struct sockaddr_in servaddr;
+    struct sockaddr_in *servaddr;
     int listenfd, connfd;
-    unsigned char buff[4096];
-    int n;
+    unsigned char *buff;
 
 public:
     enum {
         MAXLINE = 4096
     };
     MTcpServer(/* args */);
+    MTcpServer(int port);
     ~MTcpServer();
     void start();
     void run();

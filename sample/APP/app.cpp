@@ -35,10 +35,11 @@ int main(int argc, char **argv)
     ak_sdk_init( &config );
 
     cout << "hello world!" << endl;
+    // MTcpServer s;
     // test_thread();
     // test_databuf();
     // test_vdech264();
-    // test_vi_vo();
+    test_vi_vo();
     // test_tcp();
     // test_tcp_vivo();
     // if (!strcmp(argv[1], "server"))
@@ -51,10 +52,10 @@ int main(int argc, char **argv)
     // test_aenc();
     // test_adec();
     // test_ai_ao();
-    if (!strcmp(argv[1], "server"))
-        test_ao_tcp();
-    else if (!strcmp(argv[1], "client"))
-        test_ai_tcp();
+    // if (!strcmp(argv[1], "server"))
+    //     test_ao_tcp();
+    // else if (!strcmp(argv[1], "client"))
+    //     test_ai_tcp();
 }
 
 void test_vi_vo()
@@ -63,26 +64,12 @@ void test_vi_vo()
     Vo vo;
     Vdech264 v1(&vo);
     VdecSend v2(&vo, v1.get_handle_id());
-    // v2.vi = &vi;
-    // while (1);
+    // MTcpServer s;
     vi.start();
     v1.start();
     v2.start();
-    // unsigned char *tmp = (unsigned char *) ak_mem_alloc(MODULE_ID_MEMORY, 10*1024);
-    // int read_len;
-    // while (1)
-    // {
-    //     vi.dbf.rb_read(tmp, 1024, &read_len);
-    //     v2.dbf.rb_write(tmp, read_len);
-    // }
     while(1){
-        ak_timeval tim1, tim2;
-        ak_get_ostime(&tim1);
-        v2.dbf.rb_write(vi.dbf, 60*1024);
-        ak_get_ostime(&tim2);
-        long tim = ak_diff_ms_time(&tim2, &tim1);
-        // ak_print_normal(MODULE_ID_MEMORY, "move mem time %ld\n", tim);
-        ak_sleep_ms(10);
+        v2.dbf->rb_write(*vi.dbf, 1024);
     }
     while(1);
 }
@@ -102,13 +89,10 @@ void test_tcp_vivo()
     Vo vo;
     Vdech264 v1(&vo);
     VdecSend v2(&vo, v1.get_handle_id());
-    // v2.vi = &vi;
-    // while (1);
     MTcpServer server;
-    MTcpclient client;
-    server.dbf = &v2.dbf;
-    client.dbf = &vi.dbf;
     server.start();
+    MTcpclient client;
+    server.dbf = v2.dbf;
     client.start();
     vi.start();
     v1.start();
@@ -119,8 +103,8 @@ void test_tcp_vivo()
 void test_send()
 {
     Vi vi;
-    MTcpclient client;
-    client.dbf = &vi.dbf;
+    MTcpclient client("192.168.1.9");
+    client.dbf = vi.dbf;
     client.start();
     vi.start();
     while(1);
@@ -132,7 +116,7 @@ void test_recv()
     Vdech264 v1(&vo);
     VdecSend v2(&vo, v1.get_handle_id());
     MTcpServer server;
-    server.dbf = &v2.dbf;
+    server.dbf = v2.dbf;
     server.start();
     v1.start();
     v2.start();
@@ -163,8 +147,8 @@ void test_adec()
     Ao ao;
     Adec adec(&ao);
     AdecSend adec_send(&adec);
-    adec_send.dbf.rb_write(buff, 200*1024);
-    ak_print_normal(MODULE_ID_ADEC, "buffer size %d\n", adec_send.dbf.rb_get_buffer_size());
+    adec_send.dbf->rb_write(buff, 200*1024);
+    ak_print_normal(MODULE_ID_ADEC, "buffer size %d\n", adec_send.dbf->rb_get_buffer_size());
     adec.start();
     adec_send.start();
     while(1);
@@ -182,7 +166,7 @@ void test_ai_ao()
     adec_send.start();
     while(1)
     {
-        adec_send.dbf.rb_write(*ai.dbf, 4096);
+        adec_send.dbf->rb_write(*ai.dbf, 4096);
     }
 }
 
@@ -190,8 +174,8 @@ void test_ai_tcp()
 {
     Ai ai;
     MTcpclient client;
-    // client.dbf = &ai.dbf;
-    // client.start();
+    client.dbf = ai.dbf;
+    client.start();
     ai.start();
     while(1);
 }
@@ -202,7 +186,7 @@ void test_ao_tcp()
     Adec adec(&ao);
     AdecSend adec_send(&adec);
     MTcpServer server;
-    server.dbf = &adec_send.dbf;
+    server.dbf = adec_send.dbf;
     server.start();
     adec_send.start();
     adec.start();

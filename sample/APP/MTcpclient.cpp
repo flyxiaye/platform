@@ -2,31 +2,47 @@
 #include <memory.h>
 #include <stdio.h>
 
-MTcpclient::MTcpclient(/* args */)
+MTcpclient::MTcpclient()
 {
-    ip = (char *)"192.168.1.9";
+    MTcpclient("127.0.0.1", 8000);
+}
+
+MTcpclient::MTcpclient(const char * ip)
+{
+    MTcpclient(ip, 8000);
+}
+
+MTcpclient::MTcpclient(const char * ip, int port)
+{
+    // ip = (char *)"192.168.1.9";
     // ip = (char *)"127.0.0.1";
     if( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
         printf("create socket error\n");
         return;
     }
 
-    memset(&servaddr, 0, sizeof(servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(8000);
-    if( inet_pton(AF_INET, ip, &servaddr.sin_addr) <= 0){
+    // memset(&servaddr, 0, sizeof(servaddr));
+    servaddr = new struct sockaddr_in;
+    servaddr->sin_family = AF_INET;
+    servaddr->sin_port = htons(port);
+    if( inet_pton(AF_INET, ip, &servaddr->sin_addr) <= 0){
         printf("inet_pton error for\n");
         return;
     }
 
-    if( connect(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr)) < 0){
+    if( connect(sockfd, (struct sockaddr*)servaddr, sizeof(struct sockaddr_in)) < 0){
         printf("connect error\n");
         return;
     }
+    recvline = new unsigned char[4096];
+    sendline = new unsigned char[4096];
 }
 
 MTcpclient::~MTcpclient()
 {
+    delete[] recvline;
+    delete[] sendline;
+    delete servaddr;
     close(sockfd);
 }
 

@@ -50,11 +50,12 @@ Vi::Vi()
 {
     this->set_param();
     this->init();
-    // dbf = DataBuffer(MODULE_ID_VENC, venc_mem);
+    dbf = new DataBuffer(MODULE_ID_VENC, venc_mem);
 }
 
 Vi::~Vi()
 {
+    delete dbf;
     ak_venc_close(enc_pair.venc_handle);
     ak_vi_disable_chn(VIDEO_CHN0);
     ak_vi_disable_chn(VIDEO_CHN1);
@@ -365,12 +366,9 @@ void Vi::run(void)
             }
             else
             {
-                // ak_print_normal(MODULE_ID_VENC, "encode success, len is %d\n", stream->len);
-                dbf.rb_write(stream->data, stream->len);
+                dbf->rb_write(stream->data, stream->len);
                 ak_venc_release_stream(enc_pair.venc_handle, stream);
             }
-
-            
             ak_vi_release_frame(chn_id, &frame);
         }
         else

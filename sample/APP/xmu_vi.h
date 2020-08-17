@@ -29,7 +29,7 @@ public:
     ~Vi();
     void start();
     void run(void);
-    DataBuffer dbf;
+    DataBuffer * dbf;
 private:
     void set_param();
     int init();

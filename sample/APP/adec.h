@@ -38,7 +38,7 @@ public:
     void start();
     
     Adec *adec;
-    DataBuffer dbf;
+    DataBuffer *dbf;
 };
 
 
