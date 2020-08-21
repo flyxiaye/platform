@@ -17,6 +17,7 @@ public:
 	// int rb_read(DataBuffer &df_dst);
 	// int rb_get_buffer_id() { return buffer_id; }
 	int rb_get_buffer_size();
+	int rb_seek(int len);
 	int buffer_left;
 	
 

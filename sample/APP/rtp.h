@@ -3,24 +3,39 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <conio.h>
+// #include <conio.h>
 #include <string.h>
+#include "BaseThread.h"
+#include "DataBuff.h"
 
-#include <winsock2.h>
-#include <winsock2.h>
+// #include <winsock2.h>
+// #include <winsock2.h>
 
 //#include "mem.h"
 
 
-#define PACKET_BUFFER_END            (unsigned int)0x00000000
 
+
+#define PACKET_BUFFER_END            (unsigned int)0x00000000
 
 #define MAX_RTP_PKT_LENGTH     1400
 
-#define DEST_IP                "180.101.59.185"
-#define DEST_PORT            1234
+#define DEST_IP                "192.168.1.6"
+#define DEST_PORT            8000
 
 #define H264                    96
+
+typedef struct
+{
+	int startcodeprefix_len;      //! 4 for parameter sets and first slice in picture, 3 for everything else (suggested)
+	unsigned len;                 //! Length of the NAL unit (Excluding the start code, which does not belong to the NALU)
+	unsigned max_size;            //! Nal Unit Buffer size
+	int forbidden_bit;            //! should be always FALSE
+	int nal_reference_idc;        //! NALU_PRIORITY_xxxx
+	int nal_unit_type;            //! NALU_TYPE_xxxx    
+	char *buf;                    //! contains the first byte followed by the EBSP
+	unsigned short lost_packets;  //! true, if packet loss is detected
+} NALU_t;
 
 typedef struct
 {
@@ -65,5 +80,55 @@ typedef struct {
 	unsigned char S : 1;
 } FU_HEADER; /**//* 1 BYTES */
 
-BOOL InitWinsock();
+// int InitWinsock();
+
+
+class Rtp :public BaseThread
+{
+private:
+    // int sockfd, n;
+    // unsigned char *recvline, *sendline;
+    // struct sockaddr_in *servaddr;
+    // char *ip;
+
+	int FindStartCode2 (unsigned char *Buf);//查找开始字符0x000001
+	int FindStartCode3 (unsigned char *Buf);//查找开始字符0x00000001
+	//static bool flag = true;
+	int info2, info3;
+	RTP_FIXED_HEADER        *rtp_hdr;
+	
+	NALU_HEADER		*nalu_hdr;
+	FU_INDICATOR	*fu_ind;
+	FU_HEADER		*fu_hdr;
+
+	NALU_t *n;
+
+	NALU_t *AllocNALU(int buffersize);
+	void FreeNALU(NALU_t *n);
+	int GetAnnexbNALU (NALU_t *nalu);
+	void dump(NALU_t *n);
+
+	char* nalu_payload;  
+	char sendbuf[1500];
+ 
+	unsigned short seq_num;
+	int	bytes;
+	// InitWinsock(); //初始化套接字库
+	// SOCKET    socket1;
+	struct sockaddr_in server;
+	int len;
+	float framerate;
+	unsigned int timestamp_increse, ts_current;
+
+public:
+    Rtp(/* args */);
+    Rtp(const char * ip);
+    Rtp(const char * ip, int port);
+    ~Rtp();
+    void start();
+    void run();
+    void start_send();
+    DataBuffer *dbf;
+};
+
 #endif // !RTP_H

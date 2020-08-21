@@ -9,6 +9,7 @@
 #include "xmu_ai.h"
 #include "xmu_ao.h"
 #include "adec.h"
+#include "rtp.h"
 
 extern "C"{
 #include "ak_common.h"
@@ -23,6 +24,7 @@ void test_adec();
 void test_ai_ao();
 void test_ai_tcp();
 void test_ao_tcp();
+void test_rtp_send();
 
 using namespace std;
 
@@ -39,7 +41,7 @@ int main(int argc, char **argv)
     // test_thread();
     // test_databuf();
     // test_vdech264();
-    test_vi_vo();
+    // test_vi_vo();
     // test_tcp();
     // test_tcp_vivo();
     // if (!strcmp(argv[1], "server"))
@@ -56,6 +58,7 @@ int main(int argc, char **argv)
     //     test_ao_tcp();
     // else if (!strcmp(argv[1], "client"))
     //     test_ai_tcp();
+    test_rtp_send();
 }
 
 void test_vi_vo()
@@ -190,5 +193,15 @@ void test_ao_tcp()
     server.start();
     adec_send.start();
     adec.start();
+    while(1);
+}
+
+void test_rtp_send()
+{
+    Vi vi;
+    Rtp rtp;
+    rtp.dbf = vi.dbf;
+    vi.start();
+    rtp.start();
     while(1);
 }

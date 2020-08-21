@@ -16,6 +16,7 @@ private:
     unsigned char *recvline, *sendline;
     struct sockaddr_in *servaddr;
     char *ip;
+    
 public:
     MTcpclient(/* args */);
     MTcpclient(const char * ip);

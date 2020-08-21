@@ -168,7 +168,29 @@ int DataBuffer::rb_get_buffer_size()
 #endif
 }
 
-
+int DataBuffer::rb_seek(int len)
+{
+#ifdef MYQUE
+	ak_thread_mutex_lock(&this->buffer_lock);
+	if (buffer_tail <= buffer_head)
+	{
+		if (buffer_tail < len)
+			buffer_tail = buffer_size - len + buffer_tail;
+		else buffer_tail -= len;
+	} else
+	{
+		if (buffer_tail - buffer_head > len)
+			buffer_tail -= len;
+		else {
+			ak_thread_mutex_unlock(&this->buffer_lock);
+			return AK_FAILED;
+		}
+	}
+	buffer_left -= len;
+	ak_thread_mutex_unlock(&this->buffer_lock);
+	return AK_SUCCESS;
+#endif
+}
 
 
 void test_databuf()
