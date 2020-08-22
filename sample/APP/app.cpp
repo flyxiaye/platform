@@ -200,7 +200,8 @@ void test_rtp_send()
 {
     Vi vi;
     Rtp rtp;
-    rtp.dbf = vi.dbf;
+    // rtp.dbf = vi.dbf;
+    vi.rtp = &rtp;
     vi.start();
     rtp.start();
     while(1);

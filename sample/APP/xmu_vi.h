@@ -3,6 +3,7 @@
 #include "BaseThread.h"
 #include "DataBuff.h"
 #include "xmu_common.h"
+#include "rtp.h"
 
 extern "C"{
 #include "ak_common.h"
@@ -30,6 +31,7 @@ public:
     void start();
     void run(void);
     DataBuffer * dbf;
+    Rtp * rtp;
 private:
     void set_param();
     int init();

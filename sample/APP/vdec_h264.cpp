@@ -81,7 +81,7 @@ void Vdech264::run()
 		if (ret == 0)
 		{
 			/* invoke the callback function to process the frame*/
-			ak_print_normal(MODULE_ID_VDEC, "vdec timestamp %lld\n", frame.ts);
+			// ak_print_normal(MODULE_ID_VDEC, "vdec timestamp %lld\n", frame.ts);
 			// ak_print_normal(MODULE_ID_VDEC, "seq_no %ld\n", frame.id);
 			vo->demo_play_func(&frame);
 			/* relase the frame and push back to decoder */

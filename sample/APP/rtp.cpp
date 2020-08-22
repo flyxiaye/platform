@@ -2,50 +2,15 @@
 #include <stdlib.h>
 #include <string.h>
 #include <memory.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+
 #include "rtp.h"
  
-// #pragma comment(lib,"ws2_32.lib")
- 
-
- 
-// FILE *bits = NULL;                //!< the bit stream file
-// static int FindStartCode2 (unsigned char *Buf);//查找开始字符0x000001
-// static int FindStartCode3 (unsigned char *Buf);//查找开始字符0x00000001
-// //static bool flag = true;
-// static int info2=0, info3=0;
-// RTP_FIXED_HEADER        *rtp_hdr;
- 
-// NALU_HEADER		*nalu_hdr;
-// FU_INDICATOR	*fu_ind;
-// FU_HEADER		*fu_hdr;
  
 //为NALU_t结构体分配内存空间
 Rtp::Rtp()
 {
-	
-	// char* nalu_payload;  
-	// char sendbuf[1500];
- 
-	// unsigned short seq_num =0;
-	// int	bytes=0;
-	// struct sockaddr_in server;
-	// int len =sizeof(server);
-	// float framerate=15;
-	// unsigned int timestamp_increse=0,ts_current=0;
-	// timestamp_increse=(unsigned int)(90000.0 / framerate); //+0.5);  //时间戳，H264的视频设置成90000
- 
-	// server.sin_family=AF_INET;
-	// server.sin_port=htons(DEST_PORT);          
-	// server.sin_addr.s_addr=inet_addr(DEST_IP); 
-	// socket1=socket(AF_INET,SOCK_DGRAM,0);
-	// connect(socket1, (const sockaddr *)&server, len) ;//申请UDP套接字
 	seq_num =0;
 	bytes=0;
-	// InitWinsock(); //初始化套接字库
-	// SOCKET    socket1;
 	len =sizeof(server);
 	framerate=15;
 	timestamp_increse=0;
@@ -223,15 +188,14 @@ void Rtp::run()
 	int socket1=socket(AF_INET,SOCK_DGRAM,0);
 	// connect(socket1, (const sockaddr *)&server, len) ;//申请UDP套接字
 	// n = AllocNALU(8000000);//为结构体nalu_t及其成员buf分配空间。返回值为指向nalu_t存储空间的指针
- 
+	ak_print_normal(MODULE_ID_THREAD, "rtp thread start!\n");
 	while(1) 
 	{
-		int l = GetAnnexbNALU(n);//每执行一次，文件的指针指向本次找到的NALU的末尾，下一个位置即为下个NALU的起始码0x000001
-		if (l != -1) printf("len of nalu %d\n", l);
-		
+		// int l = GetAnnexbNALU(n);//每执行一次，文件的指针指向本次找到的NALU的末尾，下一个位置即为下个NALU的起始码0x000001
+		// if (l != -1) printf("len of nalu %d\n", l);
+		ak_thread_sem_wait(&sem);
 		// dump(n);//输出NALU长度和TYPE
-//  continue;
-	//（1）一个NALU就是一个RTP包的情况： RTP_FIXED_HEADER（12字节）  + NALU_HEADER（1字节） + EBPS
+		//（1）一个NALU就是一个RTP包的情况： RTP_FIXED_HEADER（12字节）  + NALU_HEADER（1字节） + EBPS
         //（2）一个NALU分成多个RTP包的情况： RTP_FIXED_HEADER （12字节） + FU_INDICATOR （1字节）+  FU_HEADER（1字节） + EBPS(1400字节)
  
 		memset(sendbuf,0,1500);//清空sendbuf；此时会将上次的时间戳清空，因此需要ts_current来保存上次的时间戳值
@@ -242,8 +206,6 @@ void Rtp::run()
 		rtp_hdr->version     = 2;  //版本号，此版本固定为2
 		rtp_hdr->marker    = 0;   //标志位，由具体协议规定其值。
 		rtp_hdr->ssrc        = htonl(10);    //随机指定为10，并且在本RTP会话中全局唯一
-//  break;
-//  continue;
 		//	当一个NALU小于1400字节的时候，采用一个单RTP包发送
 		if(n->len <= 1400)
 		{	
@@ -263,6 +225,7 @@ void Rtp::run()
 			rtp_hdr->timestamp=htonl(ts_current);
 			bytes=n->len + 12 ;	//获得sendbuf的长度,为nalu的长度（包含NALU头但除去起始前缀）加上rtp_header的固定长度12字节
 			sendto(socket1, sendbuf, bytes, 0, (struct sockaddr*)&server, sizeof(server));//发送rtp包
+			ak_print_normal(MODULE_ID_THREAD, "send success\n");
 			//	Sleep(100);
  
 		}
@@ -381,4 +344,15 @@ static void *callback(void *arg)
 void Rtp::start()
 {
 	BaseThread::start(callback);
+}
+
+void Rtp::send(unsigned char * send_data, int stream_len)
+{
+	this->stream_buf = send_data;
+	n->len = stream_len;    //NALU长度，不包括头部。
+	memcpy (n->buf, send_data, n->len);//拷贝一个完整NALU，不拷贝起始前缀0x000001或0x00000001
+	n->forbidden_bit = n->buf[0] & 0x80; //1 bit
+	n->nal_reference_idc = n->buf[0] & 0x60; // 2 bit
+	n->nal_unit_type = (n->buf[0]) & 0x1f;// 5 bit
+	ak_thread_sem_post(&sem);
 }

@@ -3,6 +3,7 @@
 #include <memory.h>
 #include <iostream>
 #include "xmu_common.h"
+#include "rtp.h"
 
 #ifdef AK_RTOS
 #include "rtthread.h"
@@ -366,7 +367,10 @@ void Vi::run(void)
             }
             else
             {
-                dbf->rb_write(stream->data, stream->len);
+
+                // dbf->rb_write(stream->data, stream->len);
+                rtp->send(stream->data, stream->len);
+                // ak_print_normal(MODULE_ID_VENC, "sizeof(int):%d, %X\n", sizeof(unsigned int), *(unsigned int*)stream->data);
                 ak_venc_release_stream(enc_pair.venc_handle, stream);
             }
             ak_vi_release_frame(chn_id, &frame);

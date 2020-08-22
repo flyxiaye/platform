@@ -7,11 +7,18 @@
 #include <string.h>
 #include "BaseThread.h"
 #include "DataBuff.h"
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 // #include <winsock2.h>
 // #include <winsock2.h>
 
 //#include "mem.h"
+
+extern "C" {
+#include "ak_log.h"
+}
 
 
 
@@ -119,16 +126,22 @@ private:
 	int len;
 	float framerate;
 	unsigned int timestamp_increse, ts_current;
-
+	unsigned char *stream_buf;
+	int stream_len;
+	
 public:
-    Rtp(/* args */);
+	Rtp(/* args */);
     Rtp(const char * ip);
     Rtp(const char * ip, int port);
     ~Rtp();
     void start();
-    void run();
-    void start_send();
+	void run();
+    // void start_send();
     DataBuffer *dbf;
+
+
+	void send(unsigned char* stream_buf, int stream_len);
 };
+
 
 #endif // !RTP_H
