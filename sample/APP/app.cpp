@@ -10,6 +10,7 @@
 #include "xmu_ao.h"
 #include "adec.h"
 #include "rtp.h"
+#include "rtp_recv.h"
 
 extern "C"{
 #include "ak_common.h"
@@ -25,6 +26,8 @@ void test_ai_ao();
 void test_ai_tcp();
 void test_ao_tcp();
 void test_rtp_send();
+void test_rtp_recv();
+void test_rtp_send_recv();
 
 using namespace std;
 
@@ -58,7 +61,12 @@ int main(int argc, char **argv)
     //     test_ao_tcp();
     // else if (!strcmp(argv[1], "client"))
     //     test_ai_tcp();
-    test_rtp_send();
+    // test_rtp_send();
+    // test_rtp_send_recv();
+    if (!strcmp(argv[1], "server"))
+        test_rtp_recv();
+    else if (!strcmp(argv[1], "client"))
+        test_rtp_send();
 }
 
 void test_vi_vo()
@@ -204,5 +212,36 @@ void test_rtp_send()
     vi.rtp = &rtp;
     vi.start();
     rtp.start();
+    while(1);
+}
+
+void test_rtp_recv()
+{
+    Vo vo;
+    Vdech264 v1(&vo);
+    VdecSend v2(&vo, v1.get_handle_id());
+    RtpRecv rtrc;
+    rtrc.dbf = v2.dbf;
+    v1.start();
+    v2.start();
+    rtrc.start();
+    while(1);
+}
+
+void test_rtp_send_recv()
+{
+    Vi vi;
+    Vo vo;
+    Vdech264 v1(&vo);
+    VdecSend v2(&vo, v1.get_handle_id());
+    Rtp rtp;
+    vi.rtp = &rtp;
+    RtpRecv rtrc;
+    rtrc.dbf = v2.dbf;
+    vi.start();
+    v1.start();
+    v2.start();
+    rtp.start();
+    rtrc.start();
     while(1);
 }

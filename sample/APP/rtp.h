@@ -11,23 +11,17 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-// #include <winsock2.h>
-// #include <winsock2.h>
-
-//#include "mem.h"
-
 extern "C" {
 #include "ak_log.h"
 }
-
-
 
 
 #define PACKET_BUFFER_END            (unsigned int)0x00000000
 
 #define MAX_RTP_PKT_LENGTH     1400
 
-#define DEST_IP                "192.168.1.6"
+#define DEST_IP                "192.168.1.9"
+// #define DEST_IP                "127.0.0.1"
 #define DEST_PORT            8000
 
 #define H264                    96
@@ -93,41 +87,28 @@ typedef struct {
 class Rtp :public BaseThread
 {
 private:
-    // int sockfd, n;
-    // unsigned char *recvline, *sendline;
-    // struct sockaddr_in *servaddr;
-    // char *ip;
-
-	int FindStartCode2 (unsigned char *Buf);//查找开始字符0x000001
-	int FindStartCode3 (unsigned char *Buf);//查找开始字符0x00000001
+	// int FindStartCode2 (unsigned char *Buf);//查找开始字符0x000001
+	// int FindStartCode3 (unsigned char *Buf);//查找开始字符0x00000001
 	//static bool flag = true;
-	int info2, info3;
+	// int info2, info3;
 	RTP_FIXED_HEADER        *rtp_hdr;
 	
 	NALU_HEADER		*nalu_hdr;
 	FU_INDICATOR	*fu_ind;
 	FU_HEADER		*fu_hdr;
 
-	NALU_t *n;
-
-	NALU_t *AllocNALU(int buffersize);
-	void FreeNALU(NALU_t *n);
-	int GetAnnexbNALU (NALU_t *nalu);
-	void dump(NALU_t *n);
-
 	char* nalu_payload;  
 	char sendbuf[1500];
  
 	unsigned short seq_num;
 	int	bytes;
-	// InitWinsock(); //初始化套接字库
-	// SOCKET    socket1;
 	struct sockaddr_in server;
 	int len;
 	float framerate;
-	unsigned int timestamp_increse, ts_current;
+	unsigned long timestamp_increse, ts_current;
 	unsigned char *stream_buf;
 	int stream_len;
+	unsigned char wait_sem;
 	
 public:
 	Rtp(/* args */);
@@ -138,7 +119,6 @@ public:
 	void run();
     // void start_send();
     DataBuffer *dbf;
-
 
 	void send(unsigned char* stream_buf, int stream_len);
 };
