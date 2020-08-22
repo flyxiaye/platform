@@ -86,11 +86,12 @@ void Vdech264::run()
 			vo->demo_play_func(&frame);
 			/* relase the frame and push back to decoder */
 			ak_vdec_release_frame(id, &frame);
+			// ak_sleep_ms(20);
 		}
 		else
 		{
 			/* get frame failed , sleep 10ms before next cycle*/
-			ak_sleep_ms(10);
+			ak_sleep_ms(20);
 		}
 
 		/* check the status finished */

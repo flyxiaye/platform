@@ -40,7 +40,7 @@ private:
     char *isp_path;
     // int main_res_id = 4;
     // int sub_res_id = 0;
-    char *pc_prog_name;                      //demo名称
+    // char *pc_prog_name;                      //demo名称
     char *type;                      //get the type input
     int main_res;
     int sub_res;

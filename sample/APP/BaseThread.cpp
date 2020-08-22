@@ -46,6 +46,11 @@ void BaseThread::stop()
 	ak_thread_cancel(thread_id);
 }
 
+void BaseThread::join()
+{
+	ak_thread_join(thread_id);
+}
+
 static void * callback(void * arg);
 
 class Test_thread :public BaseThread

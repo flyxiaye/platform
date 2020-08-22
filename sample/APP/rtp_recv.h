@@ -17,14 +17,20 @@ class RtpRecv :public BaseThread
 {
 public:
     RtpRecv();
+    RtpRecv(int port);
     ~RtpRecv();
     void run();
     void start();
     DataBuffer *dbf;
+    DataBuffer *dbf_aac;
 
 private:
     int sock;
     int rtp_buffer_unpack(unsigned char *write_buf, int write_size);
+    void deal_h264(unsigned char *write_buf, int write_size);
+    void deal_aac(unsigned char *write_buf, int write_size);
+
+    unsigned char * input_buf;
 };
 
 #endif

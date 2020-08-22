@@ -21,7 +21,7 @@ Adec::~Adec()
 void Adec::set_param()
 {
     adec_handle_id = -1;
-    dec_type = AK_AUDIO_TYPE_MP3;
+    dec_type = AK_AUDIO_TYPE_AAC;
 }
 
 int Adec::init()
@@ -51,9 +51,10 @@ void Adec::run()
     {    
         if (ak_adec_get_frame(adec_handle_id, &pcm_frame, 1))
         {
-            ak_print_error_ex(MODULE_ID_ADEC, "can not get frame=%p,len=%d\n", pcm_frame.data, pcm_frame.len);
-            ak_sleep_ms(10);
+            // ak_print_error_ex(MODULE_ID_ADEC, "can not get frame=%p,len=%d\n", pcm_frame.data, pcm_frame.len);
+            ak_sleep_ms(20);
             // break;
+            continue;
         }
 
         if (pcm_frame.len == 0 || pcm_frame.data == NULL)
@@ -98,7 +99,7 @@ AdecSend::~AdecSend()
 void AdecSend::run()
 {
     int read_len = 0;
-    unsigned int total_len = 0;
+    // unsigned int total_len = 0;
     unsigned char data[RECORD_READ_LEN];
 
     ak_print_normal_ex(MODULE_ID_ADEC, "\n\t thread create success \n");
@@ -110,7 +111,7 @@ void AdecSend::run()
         // ak_print_normal(MODULE_ID_ADEC, "read len %d\n", read_len);
         if(read_len > 0) 
         {
-            total_len += read_len;
+            // total_len += read_len;
             /* play roop */
             ak_adec_send_stream(adec_handle_id, data, read_len, 1);
             // ak_print_normal(MODULE_ID_ADEC, "read len %d\n", read_len);

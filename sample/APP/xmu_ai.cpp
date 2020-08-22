@@ -3,11 +3,9 @@
 
 Ai::Ai(/* args */)
 {
-    // BaseThread(50*1024, -1);
     set_param();
     init();
-    dbf = new DataBuffer(MODULE_ID_MEMORY, aenc_mem);
-    // dbf(MODULE_ID_AENC, aenc_mem);
+    // dbf = new DataBuffer(MODULE_ID_MEMORY, aenc_mem);
 }
 
 Ai::~Ai()
@@ -23,7 +21,7 @@ void Ai::set_param()
 
     sample_rate = AK_AUDIO_SAMPLE_RATE_8000; //"[NUM]  采样率[8000 16000 32000 44100 48000]" 
     channel_num = AUDIO_CHANNEL_MONO;  //"[NUM]  音量[1 2]" 
-    enc_type = AK_AUDIO_TYPE_MP3;   //"[TYPE]    编码类型[mp3 aac amr g711a g711u pcm]"
+    enc_type = AK_AUDIO_TYPE_AAC;   //"[TYPE]    编码类型[mp3 aac amr g711a g711u pcm]"
     // save_time = 20000;        // set save time(ms)
     // save_path= "/mnt/";    // set save path
 }
@@ -222,10 +220,7 @@ void Ai::run()
         {    
             if (stream.data && stream.len)
             {
-                // fwrite(stream.data, stream.len, 1, fp);
-                ret = dbf->rb_write(stream.data, stream.len);
-                // if (ret == AK_FAILED)
-                //     ak_print_error_ex(MODULE_ID_ADEC, "write failed\n");
+                rtp->send(stream.data, stream.len, AAC);
                 print_playing_dot();
             }
             else

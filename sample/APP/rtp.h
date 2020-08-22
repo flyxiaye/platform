@@ -11,8 +11,11 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include "xmu_common.h"
+
 extern "C" {
 #include "ak_log.h"
+#include "ak_thread.h"
 }
 
 
@@ -20,11 +23,12 @@ extern "C" {
 
 #define MAX_RTP_PKT_LENGTH     1400
 
-#define DEST_IP                "192.168.1.9"
-// #define DEST_IP                "127.0.0.1"
-#define DEST_PORT            8000
+// #define DEST_IP                "192.168.1.9"
+// // #define DEST_IP                "127.0.0.1"
+// #define DEST_PORT            8000
 
-#define H264                    96
+// #define H264                    96
+// #define AAC						97
 
 typedef struct
 {
@@ -108,19 +112,28 @@ private:
 	unsigned long timestamp_increse, ts_current;
 	unsigned char *stream_buf;
 	int stream_len;
+	int payload;
 	unsigned char wait_sem;
+	int socket1;
+	void deal_h264();
+	void deal_aac();
 	
+	char *ip;
+	int port;
+
+	ak_sem_t sem2;
+
 public:
 	Rtp(/* args */);
-    Rtp(const char * ip);
+    Rtp(int port);
     Rtp(const char * ip, int port);
     ~Rtp();
     void start();
 	void run();
     // void start_send();
-    DataBuffer *dbf;
+    // DataBuffer *dbf;
 
-	void send(unsigned char* stream_buf, int stream_len);
+	void send(unsigned char * send_data, int stream_len, int payload);
 };
 
 

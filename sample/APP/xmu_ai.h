@@ -3,6 +3,7 @@
 
 #include "BaseThread.h"
 #include "DataBuff.h"
+#include "rtp.h"
 
 extern "C" {
 #include "ak_ai.h"
@@ -33,6 +34,8 @@ public:
     void start();
     void run();
     DataBuffer *dbf;
+    Rtp *rtp;
+
 };
 
 #endif

@@ -51,7 +51,7 @@ Vi::Vi()
 {
     this->set_param();
     this->init();
-    dbf = new DataBuffer(MODULE_ID_VENC, venc_mem);
+    // dbf = new DataBuffer(MODULE_ID_VENC, venc_mem);
 }
 
 Vi::~Vi()
@@ -71,7 +71,7 @@ void Vi::set_param()
 	isp_path = (char *)"/etc/isp_ar0230_dvp.conf"; //ISP config file 保存路径, 默认为空,需要填写
 	// main_res_id = 4;        //主通道分辨率index[0 - 4]
 	// sub_res_id = 0;         //次通道分辨率index[0 - 4]
-    pc_prog_name = NULL;                      //demo名称
+    // pc_prog_name = NULL;                      //demo名称
     type         = (char *)"h264";                      //get the type input
     main_res       = 1;
     sub_res        = 0;
@@ -283,9 +283,7 @@ int Vi::init()
 
     ve_param.fps    = 25;               //fps set
     ve_param.goplen = 50;               //gop set
-    // ve_param.target_kbps = 800;         //k bps
     ve_param.target_kbps = 800;         //k bps
-    // ve_param.max_kbps    = 1024;        //max kbps
     ve_param.max_kbps    = 1024;        //max kbps
     ve_param.br_mode     = BR_MODE_CBR; //br mode
     ve_param.minqp       = 25;          //qp set
@@ -330,8 +328,6 @@ int Vi::init()
         return AK_FAILED;
     }
 
-    /* recode the file */
-    // enc_pair.file = file;
     enc_pair.venc_handle = handle_id;
     enc_pair.en_type     = encoder_type;
 }
@@ -351,7 +347,6 @@ void Vi::run(void)
     /* frame num cal */
     while(1)
     {
-        ak_get_ostime(&tim1);
         memset(&frame, 0x00, sizeof(frame));
         VI_CHN chn_id = (chn_index == 0) ?  VIDEO_CHN0 : VIDEO_CHN1;
         int ret = ak_vi_get_frame(chn_id, &frame);
@@ -369,7 +364,7 @@ void Vi::run(void)
             {
 
                 // dbf->rb_write(stream->data, stream->len);
-                rtp->send(stream->data, stream->len);
+                rtp->send(stream->data, stream->len, H264);
                 // ak_print_normal(MODULE_ID_VENC, "sizeof(int):%d, %X\n", sizeof(unsigned int), *(unsigned int*)stream->data);
                 ak_venc_release_stream(enc_pair.venc_handle, stream);
             }
@@ -382,12 +377,9 @@ void Vi::run(void)
              *	just take breath.
              */
             ak_print_normal_ex(MODULE_ID_VI, "get frame failed!\n");
-            ak_sleep_ms(10);
+            
         }
-        ak_get_ostime(&tim2);
-        long tim = ak_diff_ms_time(&tim2, &tim1);
-        // ak_print_normal(MODULE_ID_VI, "vi time: %ld\n", tim);
-
+        // ak_sleep_ms(20);
     }
     ak_mem_free(stream);
 }

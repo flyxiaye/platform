@@ -18,6 +18,7 @@ public:
 	void wait(long time);
 	void post();
 	void stop();
+	void join();
 	// virtual void run(void * arg) { std::cout << "BaseThread\n"; };
 protected:
 	ak_sem_t sem;
