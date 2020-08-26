@@ -119,6 +119,7 @@ void Rtp::deal_h264()
 		memcpy(nalu_payload,stream_buf+1,stream_len-1);//去掉nalu头的nalu剩余内容写入sendbuf[13]开始的字符串。
 
 		ts_current = ts_current + timestamp_increse;
+		ts_current = r->ts_current;
 		
 		rtp_hdr->timestamp=(ts_current);
 		bytes=stream_len + 12 ;	//获得sendbuf的长度,为nalu的长度（包含NALU头但除去起始前缀）加上rtp_header的固定长度12字节
@@ -134,6 +135,7 @@ void Rtp::deal_h264()
 		last = stream_len % 1400;//最后一个RTP包的需要装载的字节数
 		int t = 0;//用于指示当前发送的是第几个分片RTP包
 		ts_current = ts_current + timestamp_increse;
+		ts_current = r->ts_current;
 		rtp_hdr->timestamp = (ts_current);
 		while(t <= k)
 		{

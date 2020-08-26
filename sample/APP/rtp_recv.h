@@ -23,7 +23,7 @@ public:
     void start();
     DataBuffer *dbf;
     DataBuffer *dbf_aac;
-
+    unsigned long long timestamps;
 private:
     int sock;
     int rtp_buffer_unpack(unsigned char *write_buf, int write_size);

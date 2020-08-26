@@ -72,6 +72,8 @@ void RtpRecv::start()
 int RtpRecv::rtp_buffer_unpack(unsigned char *write_buf, int write_size)
 {
     RTP_FIXED_HEADER *rtp_header = (RTP_FIXED_HEADER *)write_buf;
+    timestamps = rtp_header->timestamp;
+    // ak_print_normal(2, "timstamp %d, %u\n", rtp_header->payload, rtp_header->timestamp);
     if (rtp_header->payload == H264)
     {
         deal_h264(write_buf, write_size);

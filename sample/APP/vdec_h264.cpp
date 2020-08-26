@@ -80,7 +80,12 @@ void Vdech264::run()
 
 		if (ret == 0)
 		{
-			vo->demo_play_func(&frame);
+			if(rtrc_vo->timestamps - rtrc_ao->timestamps > 3600 * 1
+			|| rtrc_ao->timestamps - rtrc_vo->timestamps > 3600 * 1)
+				// ak_sleep_ms(50);
+				ak_sleep_ms(20);
+			else
+				vo->demo_play_func(&frame);
 			ak_vdec_release_frame(id, &frame);
 		}
 		else

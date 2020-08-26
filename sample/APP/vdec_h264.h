@@ -4,6 +4,7 @@
 #include "BaseThread.h"
 #include "DataBuff.h"
 #include "xmu_vi.h"
+#include "rtp_recv.h"
 extern "C"{
 #include "ak_common.h"
 }
@@ -17,6 +18,8 @@ public:
 	void start();
 	int get_handle_id() { return handle_id; }
 	int handle_id;
+	RtpRecv *rtrc_vo;
+	RtpRecv *rtrc_ao;
 private:
 	Vo *vo;
 	
@@ -33,6 +36,7 @@ public:
 	void start();
 	DataBuffer * dbf;
 	Vi *vi;
+
 private:
 	Vo* vo;
 	int handle_id;

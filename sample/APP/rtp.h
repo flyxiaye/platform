@@ -132,6 +132,7 @@ public:
 	void run();
     // void start_send();
     // DataBuffer *dbf;
+	Rtp *r;
 
 	void send(unsigned char * send_data, int stream_len, int payload);
 };

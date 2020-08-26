@@ -753,6 +753,7 @@ void run_app(const char *ip, int send_port, int recv_port)
     vi->rtp = rtp_vi;
     // Vi *vi = NULL;
     // Rtp *rtp_vi = NULL;
+    rtp_vi->r = rtp;
 
     Ao *ao = new Ao();
     Adec *adec = new Adec(ao);
@@ -760,11 +761,14 @@ void run_app(const char *ip, int send_port, int recv_port)
     RtpRecv *rtrc = new RtpRecv(recv_port);
     rtrc->dbf_aac = adec_send->dbf;
 
+
     Vo *vo = new Vo();
     Vdech264 *v1 = new Vdech264(vo);
     VdecSend *v2 = new VdecSend(vo, v1->get_handle_id());
     RtpRecv *rtrc_vo = new RtpRecv(recv_port+1);
     rtrc_vo->dbf = v2->dbf;
+    v1->rtrc_vo = rtrc_vo;
+    v1->rtrc_ao = rtrc;
 
     cout << "ai start" << endl;
     rtp->start();
