@@ -56,7 +56,7 @@ Vi::Vi()
 
 Vi::~Vi()
 {
-    delete dbf;
+    // delete dbf;
     ak_venc_close(enc_pair.venc_handle);
     ak_vi_disable_chn(VIDEO_CHN0);
     ak_vi_disable_chn(VIDEO_CHN1);
@@ -69,13 +69,9 @@ void Vi::set_param()
 {
     channel_num = 0;        //采集通道[0 1], 主通道0，次通道1
 	isp_path = (char *)"/etc/isp_ar0230_dvp.conf"; //ISP config file 保存路径, 默认为空,需要填写
-	// main_res_id = 4;        //主通道分辨率index[0 - 4]
-	// sub_res_id = 0;         //次通道分辨率index[0 - 4]
-    // pc_prog_name = NULL;                      //demo名称
     type         = (char *)"h264";                      //get the type input
     main_res       = 1;
     sub_res        = 0;
-    // static char *cfg = "/etc/jffs2/isp_pr2000_dvp.conf";
     chn_index = 0;
 }
 
@@ -138,8 +134,6 @@ int Vi::init()
     int height = resolutions[main_res].height;
     int subwidth = resolutions[sub_res].width;;
     int subheight = resolutions[sub_res].height;
-    // int handle_id = -1;
-    // ak_pthread_t venc_stream_th;
 
     /* step 1: open video input device */
     ret = ak_vi_open(VIDEO_DEV0);

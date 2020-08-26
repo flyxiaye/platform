@@ -8,7 +8,6 @@ extern "C" {
 class BaseThread
 {
 public:
-	// BaseThread();;
 	BaseThread(int stack_size = ANYKA_THREAD_MIN_STACK_SIZE, int priority = -1);
 	virtual ~BaseThread();
 	void run(void) {};
@@ -19,7 +18,6 @@ public:
 	void post();
 	void stop();
 	void join();
-	// virtual void run(void * arg) { std::cout << "BaseThread\n"; };
 protected:
 	ak_sem_t sem;
 private:

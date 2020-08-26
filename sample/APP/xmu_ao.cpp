@@ -12,6 +12,9 @@ Ao::Ao(/* args */)
 
 Ao::~Ao()
 {
+    ak_ao_set_speaker(ao_handle_id, AUDIO_FUNC_DISABLE);
+    /* ao close */
+    ak_ao_close(ao_handle_id);
 }
 
 void Ao::set_param()
@@ -42,7 +45,9 @@ int Ao::init()
     }
 
     ak_ao_set_speaker(ao_handle_id, AUDIO_FUNC_ENABLE);
-    ak_ao_set_gain(ao_handle_id, 4);// set_gain
+    ak_ao_set_gain(ao_handle_id, 7);// set_gain
+    // ak_ao_set_eq_attr()
+    // ak_ao_set_volume(ao_handle_id, 1 << 30);
 
     ak_ao_clear_frame_buffer(ao_handle_id);// clear_frame_buffer
 }

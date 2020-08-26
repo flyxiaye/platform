@@ -47,7 +47,6 @@ void Vo::set_param()
     screen         = 1;                         //mipi屏幕
     refresh_flag   = 0;                         //flag to refresh
     refresh_record_flag = 0;                    //flag to refresh
-    // handle_id[MAX_DE_NUM] = { -1, -1, -1, -1};  //vdec handle id
 }
 
 int Vo::init()

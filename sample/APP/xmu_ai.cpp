@@ -10,7 +10,9 @@ Ai::Ai(/* args */)
 
 Ai::~Ai()
 {
-    delete dbf;
+    // delete dbf;
+    ak_ai_stop_capture(ai_handle_id);
+    ak_ai_close(ai_handle_id);
 }
 
 void Ai::set_param()
@@ -34,7 +36,7 @@ int Ai::init()
 
     ak_print_normal(MODULE_ID_AENC,"version: %s\n\n", ak_aenc_get_version());
 
-    int volume = 5;
+    int volume = 7;
 
     /* open audio input */
     struct ak_audio_in_param ai_param;
@@ -48,9 +50,10 @@ int Ai::init()
     {
         return AK_FAILED;
     }
-    ak_print_normal(MODULE_ID_AENC,"\t 1. ak_ai_open OK\n");
+    ak_print_normal(MODULE_ID_AI,"\t 1. ak_ai_open OK\n");
     ak_ai_enable_nr(ai_handle_id, AUDIO_FUNC_ENABLE);// enable_nr
     ak_ai_enable_agc(ai_handle_id, AUDIO_FUNC_ENABLE);// enable_agc
+    ak_ai_enable_aec(ai_handle_id, AUDIO_FUNC_ENABLE);
     
     ak_ai_set_gain(ai_handle_id, volume);// enable_agc
 
@@ -221,7 +224,8 @@ void Ai::run()
             if (stream.data && stream.len)
             {
                 rtp->send(stream.data, stream.len, AAC);
-                print_playing_dot();
+                // ak_print_normal(MODULE_ID_ADEC, "Adec data len %d\n", stream.len);
+                // print_playing_dot();
             }
             else
             {

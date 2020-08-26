@@ -45,6 +45,8 @@ Rtp::Rtp(const char * ip, int port)
 
 Rtp::~Rtp()
 {
+	ak_thread_sem_destroy(&sem2);
+	// close(socket1);
 }
 
  
@@ -53,8 +55,6 @@ void Rtp::run()
 	ak_print_normal(MODULE_ID_THREAD, "rtp thread start!\n");
 	while(1) 
 	{
-		// int l = GetAnnexbNALU(n);//每执行一次，文件的指针指向本次找到的NALU的末尾，下一个位置即为下个NALU的起始码0x000001
-		// if (l != -1) printf("len of nalu %d\n", l);
 		ak_thread_sem_wait(&sem);
 		// dump(n);//输出NALU长度和TYPE
 		if (payload == H264)
@@ -120,14 +120,9 @@ void Rtp::deal_h264()
 
 		ts_current = ts_current + timestamp_increse;
 		
-		// rtp_hdr->timestamp=htonl(ts_current);
 		rtp_hdr->timestamp=(ts_current);
-		// ak_print_normal(MODULE_ID_VENC, "timestamp %lu\n", rtp_hdr->timestamp); 
-		// ak_print_normal(MODULE_ID_VENC, "timestampinc %lu\n", timestamp_increse); 
 		bytes=stream_len + 12 ;	//获得sendbuf的长度,为nalu的长度（包含NALU头但除去起始前缀）加上rtp_header的固定长度12字节
 		sendto(socket1, sendbuf, bytes, 0, (struct sockaddr*)&server, sizeof(server));//发送rtp包
-		// ak_print_normal(MODULE_ID_THREAD, "send success\n");
-		//	Sleep(100);
 		wait_sem = 0;
 	}
 
@@ -140,9 +135,6 @@ void Rtp::deal_h264()
 		int t = 0;//用于指示当前发送的是第几个分片RTP包
 		ts_current = ts_current + timestamp_increse;
 		rtp_hdr->timestamp = (ts_current);
-		// rtp_hdr->timestamp = htonl(ts_current);
-		// ak_print_normal(MODULE_ID_VENC, "timestamp %lu\n", rtp_hdr->timestamp); 
-		// ak_print_normal(MODULE_ID_VENC, "timestampinc %lu\n", timestamp_increse); 
 		while(t <= k)
 		{
 			rtp_hdr->seq_no = htons(seq_num++); //序列号，每发送一个RTP包增1
@@ -237,21 +229,10 @@ void Rtp::deal_aac()
 	rtp_hdr->marker = 1;
 
 	rtp_hdr->seq_no  = htons(seq_num ++); //序列号，每发送一个RTP包增1，htons，将主机字节序转成网络字节序。
-	//设置NALU HEADER,并将这个HEADER填入sendbuf[12]
-	// nalu_hdr =(NALU_HEADER*)&sendbuf[12]; //将sendbuf[12]的地址赋给nalu_hdr，之后对nalu_hdr的写入就将写入sendbuf中；
-	// nalu_hdr->F = stream_buf[0] & 0x80;
-	// nalu_hdr->NRI= (stream_buf[0] & 0x60) >> 5;//有效数据在n->nal_reference_idc的第6，7位，需要右移5位才能将其值赋给nalu_hdr->NRI。
-	// nalu_hdr->TYPE= (stream_buf[0]) & 0x1f;
-
 	nalu_payload=&sendbuf[12];//同理将sendbuf[13]赋给nalu_payload
 	memcpy(nalu_payload,stream_buf, stream_len);//去掉nalu头的nalu剩余内容写入sendbuf[13]开始的字符串。
-
 	ts_current = ts_current + timestamp_increse;
-	
-	// rtp_hdr->timestamp=htonl(ts_current);
 	rtp_hdr->timestamp=(ts_current);
-	// ak_print_normal(MODULE_ID_VENC, "timestamp %lu\n", rtp_hdr->timestamp); 
-	// ak_print_normal(MODULE_ID_VENC, "timestampinc %lu\n", timestamp_increse); 
 	bytes=stream_len + 12 ;	//获得sendbuf的长度,为nalu的长度（包含NALU头但除去起始前缀）加上rtp_header的固定长度12字节
 	sendto(socket1, sendbuf, bytes, 0, (struct sockaddr*)&server, sizeof(server));//发送rtp包
 }

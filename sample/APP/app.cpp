@@ -11,9 +11,11 @@
 #include "adec.h"
 #include "rtp.h"
 #include "rtp_recv.h"
+#include "run_sig.h"
 
 extern "C"{
 #include "ak_common.h"
+#include "ak_drv.h"
 }
 void test_vi_vo();
 void test_tcp();
@@ -33,11 +35,13 @@ void test_rtp_ao_recv();
 void test_rtp_ai_ao();
 void test_rtp_ai_vi_send();
 void test_rtp_ao_ao_recv();
-void test_app(const char *ip, int send_port, int recv_port);
+void test_app(const char *ip, int send_port, int recv_port, int flag);
 void test_rtp_ai_ao(int flag);
 void test_rtp_vi();
+void run_app(const char *ip, int send_port, int recv_port);
 
 using namespace std;
+
 
 int main(int argc, char **argv)
 {
@@ -47,7 +51,64 @@ int main(int argc, char **argv)
     config.mem_trace_flag = SDK_RUN_NORMAL;
     ak_sdk_init( &config );
 
+    struct key_event key;
+    memset(&key, 0, sizeof(key));
+    ak_drv_key_open();
     cout << "hello world!" << endl;
+    
+    char *ip = argv[1];
+    int send_port = atoi(argv[2]);
+    int recv_port = atoi(argv[3]);
+
+    struct sockaddr_in servaddr;
+    memset(&servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(8004);
+    servaddr.sin_addr.s_addr = inet_addr(ip);
+
+    struct sockaddr_in clieaddr;
+    memset(&clieaddr, 0, sizeof(clieaddr));
+    clieaddr.sin_family = AF_INET;
+    clieaddr.sin_port = htons(8004);
+    clieaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    int sock = socket(AF_INET,SOCK_DGRAM,0);
+    RunState *rs_send = new RunState(sock, &servaddr, MSG_OUT);
+    RunState *rs_recv = new RunState(sock, &clieaddr, MSG_IN);
+    int tmp = 1, tmp2 = 0;
+    int *run_state = &tmp;
+    int *run_state_p = &tmp2;
+    rs_send->run_state = run_state;
+    rs_recv->run_state = run_state_p;
+    rs_send->start();
+    rs_recv->start();
+    while(1){
+        if (*run_state && *run_state_p){
+            run_app(ip, send_port, recv_port);
+            while(*run_state)
+            {
+                ak_drv_key_get_event(&key, 50);
+                if (key.code == 116 && key.stat == 1)
+                {
+                    *run_state_p = 0;
+                }
+                if (*run_state_p == 0)
+                {
+                    *run_state = 0;
+                }
+            }
+            cout << "end" << endl;
+            break;
+        }
+    }
+    while(*run_state || *run_state_p);
+    ak_sleep_ms(500);
+    delete rs_send, rs_recv;
+    
+
+ 
+
+
     // MTcpServer s;
     // test_thread();
     // test_databuf();
@@ -84,12 +145,12 @@ int main(int argc, char **argv)
     //     test_rtp_ao_ao_recv();
     // else if (!strcmp(argv[1], "client"))
     //     test_rtp_ai_vi_send();
-    // test_app(argv[1], atoi(argv[2]), atoi(argv[3]));
+    // test_app(argv[1], atoi(argv[2]), atoi(argv[3]), atoi(argv[4]));
     // if (!strcmp(argv[1], "server"))
     //     test_rtp_ai_ao(1);
     // else
     //     test_rtp_ai_ao(0);
-    test_rtp_vi();
+    // test_rtp_vi();
 }
 
 void test_vi_vo()
@@ -275,7 +336,7 @@ void test_rtp_ai_send()
     // MTcpclient client("192.168.1.9");
     // client.dbf = ai.dbf;
     // client.start();
-    Rtp rtp;
+    Rtp rtp("192.168.1.8", 8000);
     ai.rtp = &rtp;
     rtp.start();
     ai.start();
@@ -287,7 +348,7 @@ void test_rtp_ao_recv()
     Ao ao;
     Adec adec(&ao);
     AdecSend adec_send(&adec);
-    RtpRecv rtrc;
+    RtpRecv rtrc(8000);
     rtrc.dbf_aac = adec_send.dbf;
     adec_send.start();
     adec.start();
@@ -315,19 +376,19 @@ void test_rtp_ai_ao(int flag)
         rtrc.start();
         
 
-        Vi vi;
-        Vo vo;
-        Vdech264 v1(&vo);
-        VdecSend v2(&vo, v1.get_handle_id());
-        Rtp rtp_vi("192.168.1.9", 8003);
-        vi.rtp = &rtp_vi;
-        RtpRecv rtrc_vi(8002);
-        rtrc_vi.dbf = v2.dbf;
-        vi.start();
-        v1.start();
-        v2.start();
-        rtp_vi.start();
-        rtrc_vi.start();
+        // Vi vi;
+        // Vo vo;
+        // Vdech264 v1(&vo);
+        // VdecSend v2(&vo, v1.get_handle_id());
+        // Rtp rtp_vi("192.168.1.9", 8003);
+        // vi.rtp = &rtp_vi;
+        // RtpRecv rtrc_vi(8002);
+        // rtrc_vi.dbf = v2.dbf;
+        // vi.start();
+        // v1.start();
+        // v2.start();
+        // rtp_vi.start();
+        // rtrc_vi.start();
 
         rtrc.join();
     }
@@ -349,19 +410,19 @@ void test_rtp_ai_ao(int flag)
         rtrc.start();
         
 
-        Vi vi;
-        Vo vo;
-        Vdech264 v1(&vo);
-        VdecSend v2(&vo, v1.get_handle_id());
-        Rtp rtp_vi("192.168.1.10", 8002);
-        vi.rtp = &rtp_vi;
-        RtpRecv rtrc_vi(8003);
-        rtrc_vi.dbf = v2.dbf;
-        vi.start();
-        v1.start();
-        v2.start();
-        rtp_vi.start();
-        rtrc_vi.start();
+        // Vi vi;
+        // Vo vo;
+        // Vdech264 v1(&vo);
+        // VdecSend v2(&vo, v1.get_handle_id());
+        // Rtp rtp_vi("192.168.1.10", 8002);
+        // vi.rtp = &rtp_vi;
+        // RtpRecv rtrc_vi(8003);
+        // rtrc_vi.dbf = v2.dbf;
+        // vi.start();
+        // v1.start();
+        // v2.start();
+        // rtp_vi.start();
+        // rtrc_vi.start();
 
         rtrc.join();
     }
@@ -370,18 +431,18 @@ void test_rtp_ai_ao(int flag)
 void test_rtp_ai_vi_send()
 {
     Ai ai;
-    Rtp rtp("192.168.1.9", 8000);
+    Rtp rtp("192.168.1.8", 8000);
     ai.rtp = &rtp;
     rtp.start();
     ai.start();
 
     Vi vi;
-    Rtp rtp_vi("192.168.1.9", 8001);
+    Rtp rtp_vi("192.168.1.8", 8001);
     vi.rtp = &rtp_vi;
     vi.start();
     rtp_vi.start();
 
-    while(1);
+    rtp_vi.join();
 }
 
 void test_rtp_ao_ao_recv()
@@ -404,48 +465,240 @@ void test_rtp_ao_ao_recv()
     v2.start();
     rtrc_vo.start();
 
-    while(1);
+    rtrc_vo.join();
 }
 
-void test_app(const char *ip, int send_port, int recv_port)
+void test_app(const char *ip, int send_port, int recv_port, int flag)
 {
-    Ai ai;
-    Rtp rtp(ip, send_port);
-    ai.rtp = &rtp;
+    Ai *ai = new Ai();
+    Rtp *rtp = new Rtp(ip, send_port);
+    ai->rtp = rtp;
 
-    Vi vi;
-    Rtp rtp_vi(ip, send_port+1);
-    vi.rtp = &rtp_vi;
+    Vi *vi = new Vi();
+    Rtp *rtp_vi = new Rtp(ip, send_port+1);
+    vi->rtp = rtp_vi;
+    // Vi *vi = NULL;
+    // Rtp *rtp_vi = NULL;
 
-    Ao ao;
-    Adec adec(&ao);
-    AdecSend adec_send(&adec);
-    RtpRecv rtrc(recv_port);
-    rtrc.dbf_aac = adec_send.dbf;
+    Ao *ao = new Ao();
+    Adec *adec = new Adec(ao);
+    AdecSend *adec_send = new AdecSend(adec);
+    RtpRecv *rtrc = new RtpRecv(recv_port);
+    rtrc->dbf_aac = adec_send->dbf;
 
-
-    Vo vo;
-    Vdech264 v1(&vo);
-    VdecSend v2(&vo, v1.get_handle_id());
-    RtpRecv rtrc_vo(recv_port+1);
-    rtrc_vo.dbf = v2.dbf;
-
-    // rtp.start();
-    ai.start();
-
-    rtp_vi.start();
-    vi.start();
+    Vo *vo = new Vo();
+    Vdech264 *v1 = new Vdech264(vo);
+    VdecSend *v2 = new VdecSend(vo, v1->get_handle_id());
+    RtpRecv *rtrc_vo = new RtpRecv(recv_port+1);
+    rtrc_vo->dbf = v2->dbf;
     
+    flag &= 0x0f;
+    /* 1 ai
+       2 vi
+       4 ao
+       8 vo */
+    if (flag == 1){
+        cout << "ai start" << endl;
+        rtp->start();
+        ai->start();
+        ai->join();
+    }
 
-    adec_send.start();
-    adec.start();
-    // rtrc.start();
+    if (flag == 2){
+        cout << "vi start" << endl;
+        rtp_vi->start();
+        vi->start();
+        vi->join();
+    }
 
-    v1.start();
-    v2.start();
-    rtrc_vo.start();
+    if (flag == 3)
+    {
+        cout << "ai start" << endl;
+        rtp->start();
+        ai->start();
+        cout << "vi start" << endl;
+        rtp_vi->start();
+        vi->start();
+        vi->join();
+    }
 
-    rtrc_vo.join();
+    if (flag == 4)
+    {
+        // delete vi;
+        cout << "ao start" << endl;
+        adec_send->start();
+        adec->start();
+        rtrc->start();
+        rtrc->join();
+    }
+    
+    if (flag == 5)
+    {
+        cout << "ai start" << endl;
+        rtp->start();
+        ai->start();
+        cout << "ao start" << endl;
+        adec_send->start();
+        adec->start();
+        rtrc->start();
+        rtrc->join();
+    }
+
+    if (flag == 6)
+    {
+        cout << "vi start" << endl;
+        rtp_vi->start();
+        vi->start();
+        cout << "ao start" << endl;
+        adec_send->start();
+        adec->start();
+        rtrc->start();
+    }
+
+    if (flag == 7)
+    {
+        cout << "ai start" << endl;
+        rtp->start();
+        ai->start();
+        cout << "vi start" << endl;
+        rtp_vi->start();
+        vi->start();
+        cout << "ao start" << endl;
+        adec_send->start();
+        adec->start();
+        rtrc->start();
+        rtrc->join();
+    }
+
+    if (flag == 8)
+    {
+        cout << "vo start" << endl;
+        v1->start();
+        v2->start();
+        rtrc_vo->start();
+        rtrc_vo->join();
+    }
+
+    if (flag == 9)
+    {
+        cout << "ai start" << endl;
+        rtp->start();
+        ai->start();
+        cout << "vo start" << endl;
+        v1->start();
+        v2->start();
+        rtrc_vo->start();
+        rtrc_vo->join();
+    }
+
+    if (flag == 10)
+    {
+        cout << "vi start" << endl;
+        rtp_vi->start();
+        vi->start();
+        cout << "vo start" << endl;
+        v1->start();
+        v2->start();
+        rtrc_vo->start();
+        rtrc_vo->join();
+    }
+
+    if (flag == 11)
+    {
+        cout << "ai start" << endl;
+        rtp->start();
+        ai->start();
+        cout << "vi start" << endl;
+        rtp_vi->start();
+        vi->start();
+        cout << "vo start" << endl;
+        v1->start();
+        v2->start();
+        rtrc_vo->start();
+        rtrc_vo->join();
+    }
+
+    if (flag == 12)
+    {
+        cout << "ao start" << endl;
+        adec_send->start();
+        adec->start();
+        rtrc->start();
+        cout << "vo start" << endl;
+        v1->start();
+        v2->start();
+        rtrc_vo->start();
+        rtrc_vo->join();
+    }
+
+    if (flag == 13)
+    {
+        cout << "ai start" << endl;
+        rtp->start();
+        ai->start();
+        cout << "ao start" << endl;
+        adec_send->start();
+        adec->start();
+        rtrc->start();
+        cout << "vo start" << endl;
+        v1->start();
+        v2->start();
+        rtrc_vo->start();
+        rtrc_vo->join();
+    }
+
+    if (flag == 14)
+    {
+        cout << "vi start" << endl;
+        rtp_vi->start();
+        vi->start();
+        cout << "ao start" << endl;
+        adec_send->start();
+        adec->start();
+        rtrc->start();
+        cout << "vo start" << endl;
+        v1->start();
+        v2->start();
+        rtrc_vo->start();
+        rtrc_vo->join();
+    }
+
+    if (flag == 15)
+    {
+        cout << "ai start" << endl;
+        rtp->start();
+        ai->start();
+        cout << "vi start" << endl;
+        rtp_vi->start();
+        vi->start();
+        cout << "ao start" << endl;
+        adec_send->start();
+        adec->start();
+        rtrc->start();
+        cout << "vo start" << endl;
+        v1->start();
+        v2->start();
+        rtrc_vo->start();
+        rtrc_vo->join();
+    }
+    // if (flag & 0x04) {
+    //     cout << "ao start" << endl;
+    //     adec_send->start();
+    //     adec->start();
+    //     rtrc->start();
+    // }
+    
+    // if (flag == 8) {
+    //     cout << "vo start" << endl;
+    //     v1->start();
+    //     v2->start();
+    //     rtrc_vo->start();
+    // }
+    
+    // rtrc->join();
+    // rtrc_vo->join();
+    // ai->join();
+    // vi->join();
     // while(1);
 }
 
@@ -487,4 +740,44 @@ void test_rtp_vi()
 
     rtrc.join();
 
+}
+
+void run_app(const char *ip, int send_port, int recv_port)
+{
+    Ai *ai = new Ai();
+    Rtp *rtp = new Rtp(ip, send_port);
+    ai->rtp = rtp;
+
+    Vi *vi = new Vi();
+    Rtp *rtp_vi = new Rtp(ip, send_port+1);
+    vi->rtp = rtp_vi;
+    // Vi *vi = NULL;
+    // Rtp *rtp_vi = NULL;
+
+    Ao *ao = new Ao();
+    Adec *adec = new Adec(ao);
+    AdecSend *adec_send = new AdecSend(adec);
+    RtpRecv *rtrc = new RtpRecv(recv_port);
+    rtrc->dbf_aac = adec_send->dbf;
+
+    Vo *vo = new Vo();
+    Vdech264 *v1 = new Vdech264(vo);
+    VdecSend *v2 = new VdecSend(vo, v1->get_handle_id());
+    RtpRecv *rtrc_vo = new RtpRecv(recv_port+1);
+    rtrc_vo->dbf = v2->dbf;
+
+    cout << "ai start" << endl;
+    rtp->start();
+    ai->start();
+    cout << "vi start" << endl;
+    rtp_vi->start();
+    vi->start();
+    cout << "ao start" << endl;
+    adec_send->start();
+    adec->start();
+    rtrc->start();
+    cout << "vo start" << endl;
+    v1->start();
+    v2->start();
+    rtrc_vo->start();
 }

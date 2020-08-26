@@ -80,13 +80,8 @@ void Vdech264::run()
 
 		if (ret == 0)
 		{
-			/* invoke the callback function to process the frame*/
-			// ak_print_normal(MODULE_ID_VDEC, "vdec timestamp %lld\n", frame.ts);
-			// ak_print_normal(MODULE_ID_VDEC, "seq_no %ld\n", frame.id);
 			vo->demo_play_func(&frame);
-			/* relase the frame and push back to decoder */
 			ak_vdec_release_frame(id, &frame);
-			// ak_sleep_ms(20);
 		}
 		else
 		{
@@ -148,7 +143,6 @@ void VdecSend::run()
 	{
 		/* read the record file stream */
 		dbf->rb_read(data, RECORD_READ_LEN, &read_len);
-		// vi->dbf.rb_read(data, RECORD_READ_LEN, &read_len);
 		/* get the data and send to decoder */
 		if (read_len > 0)
 		{

@@ -16,6 +16,7 @@ Adec::Adec(Ao *ao)
 
 Adec::~Adec()
 {
+    ak_adec_close(adec_handle_id);
 }
 
 void Adec::set_param()
@@ -52,7 +53,7 @@ void Adec::run()
         if (ak_adec_get_frame(adec_handle_id, &pcm_frame, 1))
         {
             // ak_print_error_ex(MODULE_ID_ADEC, "can not get frame=%p,len=%d\n", pcm_frame.data, pcm_frame.len);
-            ak_sleep_ms(20);
+            ak_sleep_ms(10);
             // break;
             continue;
         }
@@ -103,35 +104,16 @@ void AdecSend::run()
     unsigned char data[RECORD_READ_LEN];
 
     ak_print_normal_ex(MODULE_ID_ADEC, "\n\t thread create success \n");
-
+    // ak_adec_send_stream_end(adec_handle_id);
     while (1)
     {
-        /* read the record file stream */
         dbf->rb_read(data, RECORD_READ_LEN, &read_len);
-        // ak_print_normal(MODULE_ID_ADEC, "read len %d\n", read_len);
         if(read_len > 0) 
         {
-            // total_len += read_len;
-            /* play roop */
             ak_adec_send_stream(adec_handle_id, data, read_len, 1);
-            // ak_print_normal(MODULE_ID_ADEC, "read len %d\n", read_len);
-            adec->ao->print_playing_dot();            
         } 
-        // else if(0 == read_len) 
-        // {
-        //     /* read to the end of file */
-        //     send_frame_end = 1;
-        //     ak_print_normal(MODULE_ID_ADEC, "\n\tread to the end of file\n");
-        //     break;
-        // } 
-        // else 
-        // {
-        //     ak_print_error(MODULE_ID_ADEC, "\nread, %s\n", strerror(errno));
-        //     break;
-        // }
         ak_sleep_ms(10);
     }
-    /* read over the file, must call ak_adec_read_end */
     ak_adec_send_stream_end(adec_handle_id);
 }
 
